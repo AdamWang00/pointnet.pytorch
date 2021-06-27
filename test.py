@@ -25,24 +25,27 @@ target_existence = torch.zeros(max_num_points)
 target_existence[matched_ind] = 1
 target = target[target_ind]
 
-print("geometry loss:", geometry_loss(
+print("===== WEIGHTED LOSSES =====")
+
+print("geometry loss:", geometric_weight * geometric_loss(
     reconstruction_matched[:, 0:geometry_size],
     target[:, 0:geometry_size]
 ).item())
 
-print("categorical loss:", categorical_loss(
+print("categorical loss:", categorical_weight * categorical_loss(
     reconstruction_matched[:, geometry_size:geometry_size+num_classes],
     target[:, geometry_size].long()
 ).item())
 
-print("existence loss:", existence_loss(
+print("existence loss:", existence_weight * existence_loss(
     reconstruction[:, geometry_size+num_classes],
     target_existence
 ).item())
 
-mu = mu.view(-1, mu.shape[1] * mu.shape[2])
-log_var = log_var.view(-1, log_var.shape[1] * log_var.shape[2])
-print("weighted kld loss:", kld_loss_weight * kld_loss(mu, log_var).item())
+print("kld loss:", kld_loss_weight * kld_loss(
+    mu,
+    log_var
+).item())
 
 for matched_index in range(target.shape[0]):
     print(f'===== MATCH {matched_index + 1} =====')

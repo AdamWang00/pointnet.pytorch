@@ -8,8 +8,8 @@ from utils import *
 
 
 NUM_EXAMPLES = 1024
-NUM_EPOCHS = 10
-BATCH_SIZE = 32
+NUM_EPOCHS = 20
+BATCH_SIZE = 64
 LOAD_PATH = ""
 SAVE_PATH = "experiments/model1"
 LEARNING_RATE_INITIAL = 0.001
@@ -29,11 +29,13 @@ if SAVE_PATH != '' and not os.path.exists(SAVE_PATH):
     os.makedirs(SAVE_PATH)
 
 optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE_INITIAL, betas=(0.9, 0.999))
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.5)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
 model = model.train()
 model.cuda()
 
 for epoch in range(NUM_EPOCHS):
+    epoch_losses = [0, 0, 0, 0] # geometric, categorical, existence, kld
+
     for i in range(num_batches):
         optimizer.zero_grad()
 
@@ -44,7 +46,7 @@ for epoch in range(NUM_EPOCHS):
         # forward
         reconstruction_batch, _, trans_feat, mu, log_var = model(scene)
         
-        loss = 0
+        losses = [0, 0, 0, 0] # geometric, categorical, existence, kld
         for j in range(BATCH_SIZE):
             reconstruction = reconstruction_batch[j]
             target = target_list[j]
@@ -71,24 +73,25 @@ for epoch in range(NUM_EPOCHS):
             #     log_var.shape,
             # )
 
-            loss += geometry_loss(
+            losses[0] += geometric_weight * geometric_loss(
                 reconstruction_matched[:, 0:geometry_size],
                 target[:, 0:geometry_size]
             )
-            loss += categorical_loss(
+            losses[1] += categorical_weight * categorical_loss(
                 reconstruction_matched[:, geometry_size:geometry_size+num_classes],
                 target[:, geometry_size].long()
             )
-            loss += existence_loss(
+            losses[2] += existence_weight * existence_loss(
                 reconstruction[:, geometry_size+num_classes],
                 target_existence.cuda()
             )
 
-        loss /= BATCH_SIZE
+        losses[3] = kld_loss_weight * kld_loss(mu, log_var)
 
-        mu = mu.view(-1, mu.shape[1] * mu.shape[2])
-        log_var = log_var.view(-1, log_var.shape[1] * log_var.shape[2])
-        loss += kld_loss_weight * kld_loss(mu, log_var)
+        loss = 0
+        for li in range(len(losses)):
+            loss += losses[li]
+            epoch_losses[li] += losses[li].item()
 
         # if opt.feature_transform:
         #     loss += feature_transform_regularizer(trans_feat) * 0.001
@@ -96,7 +99,18 @@ for epoch in range(NUM_EPOCHS):
         loss.backward()
         optimizer.step()
 
-        print('[%d: %d/%d] train loss: %f' % (epoch, i, num_batches, loss.item()))
+        print('[%d: %d/%d] train loss: %f (%f, %f, %f, %f)' % (
+            epoch + 1, i + 1, num_batches, loss.item(), losses[0].item(), losses[1].item(), losses[2].item(), losses[3].item()
+        ))
+
+    epoch_loss = 0
+    for li in range(len(epoch_losses)):
+        epoch_loss += epoch_losses[li]
+
+    print('EPOCH %d train loss: %f (%f, %f, %f, %f)' % (
+        epoch + 1, epoch_loss, epoch_losses[0], epoch_losses[1], epoch_losses[2], epoch_losses[3]
+    ))
 
     scheduler.step()
+
     torch.save(model.state_dict(), '%s/%d.pth' % (SAVE_PATH, epoch))

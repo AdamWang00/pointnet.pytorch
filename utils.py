@@ -5,13 +5,17 @@ import random
 from scipy.optimize import linear_sum_assignment
 
 from pointnet.config import *
+from torch.nn.modules.module import T
 
 
-def geometry_loss(x, target):
+def geometric_loss(x, target):
     """
     x: (N, geometry_size)
     target: (N, geometry_size)
     """
+    # print("GEOMETRY", x, target)
+    assert len(x.shape) == 2
+    assert x.shape == target.shape
     return F.mse_loss(x, target)
 
 
@@ -20,6 +24,10 @@ def categorical_loss(x_logits, target_class):
     x_logits: (N, num_classes)
     target_class: (N) where each value l (label) is 0 <= l <= num_classes-1
     """
+    # print("CATEGORICAL", x_logits, target_class)
+    assert len(x_logits.shape) == 2
+    assert len(target_class.shape) == 1
+    assert x_logits.shape[0] == target_class.shape[0]
     return F.cross_entropy(x_logits, target_class)
 
 
@@ -28,16 +36,25 @@ def existence_loss(x_logits, target_existence):
     x_logits: (N)
     target_existence: (N) where each value is 0 or 1
     """
+    # print("EXISTENCE", x_logits, target_existence)
+    assert len(x_logits.shape) == 1
+    assert x_logits.shape == target_existence.shape
     return F.binary_cross_entropy_with_logits(x_logits, target_existence)
 
 
 def kld_loss(mu, log_var):
+    """
+    mu: (N, latent_size)
+    log_var: (N, latent_size)
+    """
+    assert len(mu.shape) == 2
+    assert mu.shape == log_var.shape
     return torch.mean(-0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim=1), dim=0)
 
 
 def get_assignment_problem_matchings(cost_matrix):
     """
-    cost_matrix must have r rows and c cols, where r <= c
+    cost_matrix must have r rows and c cols (shape (r, c)), where r <= c
 
     finds matching with minimum total cost
 
@@ -56,10 +73,14 @@ def get_cost_matrix_2d(x_pos, target_pos):
     """
     x_pos: (max_num_points, 2)
     target_pos: (num_points, 2), where num_points <= max_num_points
+    returns (num_points, max_num_points)
     """
+    assert x_pos.shape[0] >= target_pos.shape[0]
+    assert x_pos.shape[1] == target_pos.shape[1]
     x_pos_repeated = x_pos.repeat(target_pos.shape[0], 1, 1)
     target_pos_repeated = target_pos.repeat(x_pos.shape[0], 1, 1).transpose(0, 1)
-    return torch.norm(x_pos_repeated - target_pos_repeated, 2, -1)
+    cost_matrix = torch.norm(x_pos_repeated - target_pos_repeated, 2, -1)
+    return cost_matrix
 
 
 def generate_scene(batch_size):

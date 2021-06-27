@@ -100,13 +100,12 @@ class PointNetEncoder(nn.Module):
         x = F.relu(self.bn3(self.conv3(x)))
         x = F.relu(self.bn4(self.conv4(x)))
         x = F.relu(self.bn5(self.conv5(x)))
-        x = torch.max(x, 2, keepdim=True)[0]
-        print("TODO: check if we need to use x.view", x.shape)
+        x, _ = torch.max(x, 2, keepdim=True)
         x = x.view(-1, 1024)
 
         # VAE (no activation)
-        mu = self.conv5_mu(x)
-        log_var = self.conv5_var(x)
+        mu = self.fc_mu(x)
+        log_var = self.fc_var(x)
         x = self.reparameterize(mu, log_var)
 
         if self.global_feat:
@@ -140,8 +139,8 @@ class PointNetVAE(nn.Module):
     
     def generate(self):
         x = torch.randn(1, 1024)
-        x = self.dropout(F.relu(self.bn1(self.fc1(x))))
-        x = self.dropout(F.relu(self.bn2(self.fc2(x))))
+        x = F.relu(self.bn1(self.fc1(x)))
+        x = F.relu(self.bn2(self.fc2(x)))
         x = self.fc3(x)
 
         x = x.view(max_num_points, point_size + 1)
