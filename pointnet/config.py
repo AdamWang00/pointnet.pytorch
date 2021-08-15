@@ -1,3 +1,4 @@
+latent_size = 4
 max_num_points = 5
 
 geometry_size = 2 + 2 # position and dimensions
@@ -7,6 +8,8 @@ code_size = 0
 point_size = geometry_size + orientation_size + num_classes + code_size
 
 geometric_weight = 1
-categorical_weight = 0.03
+categorical_weight = 1
 existence_weight = 0.003
-kld_loss_weight = 0
+kld_loss_weight = 0.01
+
+dimensions_matching_weight = 0.5

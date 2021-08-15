@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.random import normal
 import torch
 import torch.nn.functional as F
 import random
@@ -71,8 +72,8 @@ def get_assignment_problem_matchings(cost_matrix):
 
 def get_cost_matrix_2d(x_pos, target_pos):
     """
-    x_pos: (max_num_points, 2)
-    target_pos: (num_points, 2), where num_points <= max_num_points
+    x_pos: (max_num_points, D)
+    target_pos: (num_points, D), where num_points <= max_num_points
     returns (num_points, max_num_points)
     """
     assert x_pos.shape[0] >= target_pos.shape[0]
@@ -83,9 +84,65 @@ def get_cost_matrix_2d(x_pos, target_pos):
     return cost_matrix
 
 
-def generate_scene(batch_size):
+def generate_scene(batch_size, encoding=None):
+    return table1(batch_size, encoding=encoding)
+    # return table2(batch_size)
+
+
+def table1(batch_size, encoding=None):
     """
-    "a square table with chairs"
+    "a square table with 0-4 chairs"
+    [max_num_points, point_size + 1], [max_num_points, geometry_size + orientation_size + 1 + code_size]
+    (padded with zeros)
+
+    encoding: None for random, 0-15 for nonrandom
+    """
+    assert max_num_points >= 5
+
+    scene = np.zeros((batch_size, max_num_points, point_size + 1))
+    target_list = []
+
+    for i in range(batch_size):
+        # "table"
+        scene[i, 0, :] = [0, 0, 0.4, 0.4, 1, 0, 1]
+        target = [[0, 0, 0.4, 0.4, 0]]
+
+        # "chairs"
+        if encoding is None:
+            if random.random() < 0.5:
+                scene[i, 1, :] = [0.4, 0, 0.2, 0.2, 0, 1, 1]
+                target.append([0.4, 0, 0.2, 0.2, 1])
+            if random.random() < 0.5:
+                scene[i, 2, :] = [0, 0.4, 0.2, 0.2, 0, 1, 1]
+                target.append([0, 0.4, 0.2, 0.2, 1])
+            if random.random() < 0.5:
+                scene[i, 3, :] = [-0.4, 0, 0.2, 0.2, 0, 1, 1]
+                target.append([-0.4, 0, 0.2, 0.2, 1])
+            if random.random() < 0.5:
+                scene[i, 4, :] = [0, -0.4, 0.2, 0.2, 0, 1, 1]
+                target.append([0, -0.4, 0.2, 0.2, 1])
+            target_list.append(torch.Tensor(target))
+        else:
+            if encoding % 2 == 1:
+                scene[i, 1, :] = [0.4, 0, 0.2, 0.2, 0, 1, 1]
+                target.append([0.4, 0, 0.2, 0.2, 1])
+            if (encoding // 2) % 2 == 1:
+                scene[i, 2, :] = [0, 0.4, 0.2, 0.2, 0, 1, 1]
+                target.append([0, 0.4, 0.2, 0.2, 1])
+            if (encoding // 4) % 2 == 1:
+                scene[i, 3, :] = [-0.4, 0, 0.2, 0.2, 0, 1, 1]
+                target.append([-0.4, 0, 0.2, 0.2, 1])
+            if (encoding // 8) % 2 == 1:
+                scene[i, 4, :] = [0, -0.4, 0.2, 0.2, 0, 1, 1]
+                target.append([0, -0.4, 0.2, 0.2, 1])
+            target_list.append(torch.Tensor(target))
+    
+    return (torch.Tensor(scene), target_list)
+
+
+def table2(batch_size):
+    """
+    "a square table with 4 chairs of varying distance (gaussian) from the table"
     [max_num_points, point_size + 1], [max_num_points, geometry_size + orientation_size + 1 + code_size]
     (padded with zeros)
     """
@@ -100,18 +157,22 @@ def generate_scene(batch_size):
         target = [[0, 0, 0.4, 0.4, 0]]
 
         # "chairs"
-        if random.random() < 0.5:
-            scene[i, 1, :] = [0.4, 0, 0.2, 0.2, 0, 1, 1]
-            target.append([0.4, 0, 0.2, 0.2, 1])
-        if random.random() < 0.5:
-            scene[i, 2, :] = [0, 0.4, 0.2, 0.2, 0, 1, 1]
-            target.append([0, 0.4, 0.2, 0.2, 1])
-        if random.random() < 0.5:
-            scene[i, 3, :] = [-0.4, 0, 0.2, 0.2, 0, 1, 1]
-            target.append([-0.4, 0, 0.2, 0.2, 1])
-        if random.random() < 0.5:
-            scene[i, 4, :] = [0, -0.4, 0.2, 0.2, 0, 1, 1]
-            target.append([0, -0.4, 0.2, 0.2, 1])
+        rand_dist = np.clip(normal(0.5, 0.1), 0.3, 0.7)
+        scene[i, 1, :] = [rand_dist, 0, 0.2, 0.2, 0, 1, 1]
+        target.append([rand_dist, 0, 0.2, 0.2, 1])
+
+        rand_dist = np.clip(normal(0.5, 0.1), 0.3, 0.7)
+        scene[i, 2, :] = [0, rand_dist, 0.2, 0.2, 0, 1, 1]
+        target.append([0, rand_dist, 0.2, 0.2, 1])
+
+        rand_dist = np.clip(normal(0.5, 0.1), 0.3, 0.7)
+        scene[i, 3, :] = [-rand_dist, 0, 0.2, 0.2, 0, 1, 1]
+        target.append([-rand_dist, 0, 0.2, 0.2, 1])
+
+        rand_dist = np.clip(normal(0.5, 0.1), 0.3, 0.7)
+        scene[i, 4, :] = [0, -rand_dist, 0.2, 0.2, 0, 1, 1]
+        target.append([0, -rand_dist, 0.2, 0.2, 1])
+
         target_list.append(torch.Tensor(target))
     
     return (torch.Tensor(scene), target_list)

@@ -57,8 +57,8 @@ class PointNetEncoder(nn.Module):
         self.conv3 = torch.nn.Conv1d(64, 64, 1)
         self.conv4 = torch.nn.Conv1d(64, 128, 1)
         self.conv5 = torch.nn.Conv1d(128, 1024, 1)
-        self.fc_mu = nn.Linear(1024, 1024)
-        self.fc_var = nn.Linear(1024, 1024)
+        self.fc_mu = nn.Linear(1024, latent_size)
+        self.fc_var = nn.Linear(1024, latent_size)
 
         self.bn1 = nn.BatchNorm1d(64)
         self.bn2 = nn.BatchNorm1d(64)
@@ -120,7 +120,7 @@ class PointNetVAE(nn.Module):
         super(PointNetVAE, self).__init__()
         self.feature_transform = feature_transform
         self.encoder = PointNetEncoder(global_feat=True, feature_transform=feature_transform)
-        self.fc1 = nn.Linear(1024, 512)
+        self.fc1 = nn.Linear(latent_size, 512)
         self.fc2 = nn.Linear(512, 256)
         self.fc3 = nn.Linear(256, (point_size + 1) * max_num_points)
         self.bn1 = nn.BatchNorm1d(512)
@@ -138,7 +138,7 @@ class PointNetVAE(nn.Module):
         return x, trans, trans_feat, mu, log_var
     
     def generate(self):
-        x = torch.randn(1, 1024)
+        x = torch.randn(1, latent_size)
         x = F.relu(self.bn1(self.fc1(x)))
         x = F.relu(self.bn2(self.fc2(x)))
         x = self.fc3(x)
