@@ -137,8 +137,12 @@ class PointNetVAE(nn.Module):
 
         return x, trans, trans_feat, mu, log_var
     
-    def generate(self):
-        x = torch.randn(1, latent_size)
+    def generate(self, latent_code=None):
+        if latent_code is None:
+            x = torch.randn(1, latent_size)
+        else:
+            assert latent_code.shape == (1, latent_size)
+            x = latent_code
         x = F.relu(self.bn1(self.fc1(x)))
         x = F.relu(self.bn2(self.fc2(x)))
         x = self.fc3(x)

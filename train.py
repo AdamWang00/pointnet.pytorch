@@ -7,12 +7,14 @@ from pointnet.config import *
 from utils import *
 
 
-NUM_EXAMPLES = 1024
-NUM_EPOCHS = 30
-BATCH_SIZE = 64
-LOAD_PATH = ""
-SAVE_PATH = "experiments/model2"
-LEARNING_RATE_INITIAL = 0.001
+NUM_EXAMPLES = num_examples
+NUM_EPOCHS = num_epochs
+BATCH_SIZE = batch_size
+LOAD_PATH = ''
+SAVE_PATH = "experiments/" + model_name
+LEARNING_RATE_INITIAL = learning_rate
+STEP_SIZE = step_size
+STEP_GAMMA = step_gamma
 
 
 num_batches = NUM_EXAMPLES // BATCH_SIZE
@@ -29,7 +31,7 @@ if SAVE_PATH != '' and not os.path.exists(SAVE_PATH):
     os.makedirs(SAVE_PATH)
 
 optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE_INITIAL, betas=(0.9, 0.999))
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.5)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=STEP_SIZE, gamma=STEP_GAMMA)
 model = model.train()
 model.cuda()
 

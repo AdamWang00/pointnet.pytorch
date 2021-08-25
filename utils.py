@@ -85,8 +85,12 @@ def get_cost_matrix_2d(x_pos, target_pos):
 
 
 def generate_scene(batch_size, encoding=None):
-    return table1(batch_size, encoding=encoding)
-    # return table2(batch_size)
+    if procedure == "table1":
+        return table1(batch_size, encoding=encoding)
+    elif procedure == "table2":
+        return table2(batch_size)
+    else:
+        return None
 
 
 def table1(batch_size, encoding=None):

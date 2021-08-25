@@ -5,14 +5,16 @@ from pointnet.config import *
 from utils import *
 from PIL import Image, ImageDraw, ImageFont
 
-LOAD_PATH = "experiments/model1/latest.pth"
+LOAD_PATH = "experiments/" + model_name + "/" + epoch_load + ".pth"
+NUM_TESTS = 8
+
 model = PointNetVAE()
 model.load_state_dict(torch.load(LOAD_PATH))
 model = model.eval()
 
 font = ImageFont.truetype('/home/awang/Roboto-Regular.ttf', 12)
 
-for enc in range(16):
+for enc in range(NUM_TESTS):
     scene, target_list = generate_scene(1, encoding=enc)
     target = target_list[0]
 
@@ -89,27 +91,26 @@ for enc in range(16):
     for idx, r in enumerate(reconstruction.squeeze().tolist()):
         category = np.argmax(r[geometry_size:geometry_size+num_classes])
         existence = r[geometry_size+num_classes] > 0
+
+        box_nw = (w/2*(3 + r[0] - r[2]/2), h/2*(1 + r[1] - r[3]/2))
+        box_se = (w/2*(3 + r[0] + r[2]/2), h/2*(1 + r[1] + r[3]/2))
+
         if existence:
             draw.rectangle(
-                [
-                    (w/2*(3 + r[0] - r[2]/2), h/2*(1 + r[1] - r[3]/2)),
-                    (w/2*(3 + r[0] + r[2]/2), h/2*(1 + r[1] + r[3]/2))
-                ],
+                [box_nw, box_se],
                 fill=("blue" if category == 0 else "orange"),
                 width=3,
                 outline="black"
             )
-            draw.text((w/2*(3 + r[0] - r[2]/2) + 2, h/2*(1 + r[1] - r[3]/2) + 2), f'{idx}', fill=(255,255,255,128), font=font)
         else:
             draw.rectangle(
-                [
-                    (w/2*(3 + r[0] - r[2]/2), h/2*(1 + r[1] - r[3]/2)),
-                    (w/2*(3 + r[0] + r[2]/2), h/2*(1 + r[1] + r[3]/2))
-                ],
+                [box_nw, box_se],
                 fill=("#dbf0fe" if category == 0 else "#ffeeda"),
                 width=1,
                 outline="black"
             )
-            draw.text((w/2*(3 + r[0] - r[2]/2) + 2, h/2*(1 + r[1] - r[3]/2) + 2), f'{idx}', fill=(255,255,255,128), font=font)
+
+        box_label_nw = (box_nw[0] + 2, box_nw[1] + 2)
+        draw.text(box_label_nw, f'{idx}', fill=(255,255,255,128), font=font)
 
     img.show()

@@ -5,7 +5,11 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 LOAD_PATH = "experiments/" + model_name + "/" + epoch_load + ".pth"
-NUM_GENERATIONS = 8
+NUM_INTERPOLATIONS = 5
+
+# latent code goes from LATENT2 => LATENT1, so most recently generated will be LATENT1
+LATENT1 = torch.Tensor([0, 0, 0, -2])
+LATENT2 = torch.Tensor([0, 0, 0, 2])
 
 model = PointNetVAE()
 model.load_state_dict(torch.load(LOAD_PATH))
@@ -13,8 +17,12 @@ model = model.eval()
 
 font = ImageFont.truetype('/home/awang/Roboto-Regular.ttf', 12)
 
-for _ in range(NUM_GENERATIONS):
-    generated_scene = model.generate()
+for i in range(NUM_INTERPOLATIONS):
+    latent1_weight = i / (NUM_INTERPOLATIONS - 1)
+    latent2_weight = 1 - latent1_weight
+    latent_code = LATENT1 * latent1_weight + LATENT2 * latent2_weight
+    print(latent_code)
+    generated_scene = model.generate(latent_code=latent_code.unsqueeze(0))
 
     w, h = 500, 500
 
