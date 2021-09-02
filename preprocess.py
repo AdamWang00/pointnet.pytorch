@@ -179,13 +179,13 @@ for scene_filename in scene_filenames:
     room_count += room_count_scene
 
 info = [
-    f"Total rooms: {room_count}",
-    f"Average furniture count: {furniture_count/room_count}",
-    f"Max furniture count: {max_furniture_count}"
+    f"Total rooms: {room_count}\n",
+    f"Average furniture count: {furniture_count/room_count}\n",
+    f"Max furniture count: {max_furniture_count}\n"
 ]
 
-with open(os.path.join(base_dir, "info.txt"), "w"):
-    base_dir.writelines(info)
+with open(os.path.join(base_dir, "info.txt"), "w") as f:
+    f.writelines(info)
 
 for message in info:
-    print(message)
+    print(message, end="")
