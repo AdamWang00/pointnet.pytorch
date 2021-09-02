@@ -70,9 +70,9 @@ def quaternion_to_orientation(qua, axis = np.array([0, 0, 1])):
     return clip_orientation(vector_dot_matrix3(axis, rotMatrix))
 
 
-scenes_dir = "/home/awang/projects/data/3D-FRONT"
-data_dir = "/home/awang/projects/pointnet.pytorch/data"
-model_info_filepath = "/home/awang/projects/data/3D-FUTURE-model/model_info.json"
+scenes_dir = "../data/3D-FRONT"
+data_dir = "./data"
+model_info_filepath = "../data/3D-FUTURE-model/model_info.json"
 rooms_subdir = "Rooms"
 
 room_type = "Bedroom"
