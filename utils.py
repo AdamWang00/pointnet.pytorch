@@ -20,6 +20,16 @@ def geometric_loss(x, target):
     return F.mse_loss(x, target)
 
 
+def orientation_loss(x, target):
+    """
+    x: (N, orientation_size)
+    target: (N, orientation_size)
+    """
+    assert len(x.shape) == 2
+    assert x.shape == target.shape
+    return -F.cosine_similarity(x, target)
+
+
 def categorical_loss(x_logits, target_class):
     """
     x_logits: (N, num_classes)
