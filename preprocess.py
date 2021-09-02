@@ -79,11 +79,11 @@ room_type = "Bedroom"
 furniture_super_categories = {"Bed"} # super-category in 3D-FUTURE-model/model_info.json
 furniture_categories = {"Nightstand"} # category in 3D-FUTURE-model/model_info.json
 
-category_maps_dir = os.path.join(data_dir, room_type)
-if not os.path.isdir(category_maps_dir):
-        os.makedirs(category_maps_dir)
+base_dir = os.path.join(data_dir, room_type)
+if not os.path.isdir(base_dir):
+    os.makedirs(base_dir)
 
-rooms_dir = os.path.join(data_dir, room_type, rooms_subdir)
+rooms_dir = os.path.join(base_dir, rooms_subdir)
 if not os.path.isdir(rooms_dir):
     os.makedirs(rooms_dir)
 
@@ -95,7 +95,7 @@ for idx, category in enumerate(furniture_super_categories.union(furniture_catego
     categories_reverse_dict[idx] = category
     num_categories += 1
 
-with open(os.path.join(category_maps_dir, "categories.pkl"), "wb") as f:
+with open(os.path.join(base_dir, "categories.pkl"), "wb") as f:
     pickle.dump(categories_reverse_dict, f, pickle.HIGHEST_PROTOCOL)
 
 with open(model_info_filepath, "r") as f:
@@ -178,6 +178,14 @@ for scene_filename in scene_filenames:
 
     room_count += room_count_scene
 
-print("Total rooms:", room_count)
-print("Average furniture count:", furniture_count/room_count)
-print("Max furniture count:", max_furniture_count)
+info = [
+    f"Total rooms: {room_count}",
+    f"Average furniture count: {furniture_count/room_count}",
+    f"Max furniture count: {max_furniture_count}"
+]
+
+with open(os.path.join(base_dir, "info.txt"), "w"):
+    base_dir.writelines(info)
+
+for message in info:
+    print(message)
