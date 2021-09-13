@@ -3,10 +3,7 @@ import numpy as np
 import pickle
 from PIL import Image, ImageDraw, ImageFont
 
-data_dir = "./data"
-rooms_subdir = "Rooms"
-
-room_type = "Bedroom"
+from pointnet.config import *
 
 colors = {
     "Bed": "blue",

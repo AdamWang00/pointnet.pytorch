@@ -72,9 +72,7 @@ def quaternion_to_orientation(qua, axis = np.array([0, 0, 1])):
 
 
 scenes_dir = "../data/3D-FRONT"
-data_dir = "./data"
 model_info_filepath = "../data/3D-FUTURE-model/model_info.json"
-rooms_subdir = "Rooms"
 
 room_type = "Bedroom"
 furniture_super_categories = {"Bed"} # super-category in 3D-FUTURE-model/model_info.json

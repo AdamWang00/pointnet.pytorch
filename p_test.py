@@ -1,3 +1,4 @@
+import os
 import torch
 import numpy as np
 from pointnet.model import PointNetVAE
@@ -5,7 +6,7 @@ from pointnet.config import *
 from utils import *
 from PIL import Image, ImageDraw, ImageFont
 
-LOAD_PATH = "experiments/" + model_name + "/" + epoch_load + ".pth"
+LOAD_PATH = os.path.join("experiments", model_name, model_params_subdir, epoch_load + ".pth")
 NUM_TESTS = 8
 
 model = PointNetVAE()

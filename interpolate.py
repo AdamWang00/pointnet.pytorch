@@ -4,7 +4,7 @@ from pointnet.config import *
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-LOAD_PATH = "experiments/" + model_name + "/" + epoch_load + ".pth"
+LOAD_PATH = os.path.join("experiments", model_name, model_params_subdir, epoch_load + ".pth")
 NUM_INTERPOLATIONS = 5
 
 # latent code goes from LATENT2 => LATENT1, so most recently generated will be LATENT1

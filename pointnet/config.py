@@ -1,10 +1,15 @@
 model_name = "bedroom"
 epoch_load = "latest"
 
+data_dir = "./data"
+rooms_subdir = "Rooms"
+
+model_params_subdir = "ModelParameters"
+
 params_history = {
     "bedroom": {
         "procedure": "bedroom1",
-        "num_epochs": 50,
+        "num_epochs": 100,
         "batch_size": 6,
         "learning_rate": 0.001,
         "step_size": 20,
@@ -198,6 +203,7 @@ params_history = {
 
 procedure_params_all = {
     "bedroom1": {
+        "room_type": "Bedroom",
         "geometry_size": 2 + 2, # position and dimensions
         "orientation_size": 2,
         "num_categories": 2,
@@ -221,7 +227,7 @@ params = params_history[model_name]
 procedure = params["procedure"]
 procedure_params = procedure_params_all[procedure]
 
-num_examples = params["num_examples"]
+num_examples = params["num_examples"] if "num_examples" in params else None
 num_epochs = params["num_epochs"]
 batch_size = params["batch_size"]
 learning_rate = params["learning_rate"]
@@ -231,6 +237,7 @@ step_gamma = params["step_gamma"]
 latent_size = params["latent_size"]
 max_num_points = params["max_num_points"]
 
+room_type = procedure_params["room_type"]
 geometry_size = procedure_params["geometry_size"]
 orientation_size = procedure_params["orientation_size"]
 num_categories = procedure_params["num_categories"]

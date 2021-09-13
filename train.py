@@ -13,15 +13,10 @@ from dataset import SceneDataset
 NUM_EPOCHS = num_epochs
 BATCH_SIZE = batch_size
 LOAD_PATH = ''
-SAVE_PATH = "experiments/" + model_name
+SAVE_PATH = os.path.join("experiments", model_name, model_params_subdir)
 LEARNING_RATE_INITIAL = learning_rate
 STEP_SIZE = step_size
 STEP_GAMMA = step_gamma
-
-data_dir = "./data"
-rooms_subdir = "Rooms"
-
-room_type = "Bedroom"
 
 base_dir = os.path.join(data_dir, room_type)
 rooms_dir = os.path.join(base_dir, rooms_subdir)
@@ -51,6 +46,13 @@ scene_loader = data_utils.DataLoader(
     drop_last=True,
     collate_fn=collate_fn
 )
+
+loss_log = []
+geometric_loss_log = []
+orientation_loss_log = []
+categorical_loss_log = []
+existence_loss_log = []
+kld_loss_log = []
 
 for epoch in range(NUM_EPOCHS):
     epoch_losses = [0, 0, 0, 0, 0] # geometric, orientation, categorical, existence, kld
@@ -133,8 +135,27 @@ for epoch in range(NUM_EPOCHS):
         epoch + 1, epoch_loss, epoch_losses[0], epoch_losses[1], epoch_losses[2], epoch_losses[3], epoch_losses[4]
     ))
 
+    loss_log.append(epoch_loss)
+    geometric_loss_log.append(epoch_losses[0])
+    orientation_loss_log.append(epoch_losses[1])
+    categorical_loss_log.append(epoch_losses[2])
+    existence_loss_log.append(epoch_losses[3])
+    kld_loss_log.append(epoch_losses[4])
+
     scheduler.step()
 
-    torch.save(model.state_dict(), '%s/%d.pth' % (SAVE_PATH, epoch))
+    # torch.save(model.state_dict(), '%s/%d.pth' % (SAVE_PATH, epoch))
+
+torch.save(
+    {
+        "loss": loss_log,
+        "geometric_loss": geometric_loss_log,
+        "orientation_loss": orientation_loss_log,
+        "categorical_loss": categorical_loss_log,
+        "existence_loss": existence_loss_log,
+        "kld_loss": kld_loss_log
+    },
+    os.path.join("experiments", model_name, "Logs.pth")
+)
 
 torch.save(model.state_dict(), '%s/latest.pth' % (SAVE_PATH))

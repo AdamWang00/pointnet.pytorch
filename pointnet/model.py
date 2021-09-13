@@ -73,7 +73,10 @@ class PointNetEncoder(nn.Module):
 
     def reparameterize(self, mu, logvar):
         std = torch.exp(0.5 * logvar)
-        eps = torch.randn_like(std)
+        if self.training: # randomize during training, use mu during evaluation
+            eps = torch.randn_like(std)
+        else:
+            eps = torch.zeros_like(std)
         return eps * std + mu
 
     def forward(self, x): # x: [batch_size, point_size + 1, num_points]
@@ -137,7 +140,7 @@ class PointNetVAE(nn.Module):
 
         return x, trans, trans_feat, mu, log_var
     
-    def generate(self, latent_code=None):
+    def generate(self, latent_code=None): # note this does not make use of encoder
         if latent_code is None:
             x = torch.randn(1, latent_size)
         else:

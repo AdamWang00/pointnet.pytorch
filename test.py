@@ -8,17 +8,12 @@ from utils import *
 from PIL import Image, ImageDraw, ImageFont
 from dataset import SceneDataset
 
-LOAD_PATH = "experiments/" + model_name + "/" + epoch_load + ".pth"
-NUM_TESTS = 8
+LOAD_PATH = os.path.join("experiments", model_name, model_params_subdir, epoch_load + ".pth")
+NUM_TESTS = 5
 
 model = PointNetVAE()
 model.load_state_dict(torch.load(LOAD_PATH))
 model = model.eval()
-
-data_dir = "./data"
-rooms_subdir = "Rooms"
-
-room_type = "Bedroom"
 
 colors = {
     "Bed": "blue",
@@ -42,6 +37,7 @@ scene_dataset = SceneDataset(rooms_dir, max_num_points)
 
 for i in range(NUM_TESTS):
     scene, target = scene_dataset.__getitem__(i)
+    scene = scene.unsqueeze(0)
 
     reconstruction, _, _, mu, log_var = model(scene.transpose(2, 1))
     reconstruction = reconstruction[0]
