@@ -27,7 +27,7 @@ def orientation_loss(x, target):
     """
     assert len(x.shape) == 2
     assert x.shape == target.shape
-    return torch.mean(-F.cosine_similarity(x, target))
+    return 1 + torch.mean(-F.cosine_similarity(x, target))
 
 
 def categorical_loss(x_logits, target_class):

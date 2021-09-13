@@ -10,7 +10,7 @@ class SceneDataset(torch.utils.data.Dataset):
         self,
         data_source,
         max_num_points,
-        load_ram=True
+        load_ram=False
     ):
         self.data_source = data_source
         self.npyfiles = os.listdir(data_source)
