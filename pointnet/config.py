@@ -1,7 +1,23 @@
-model_name = "model2a"
+model_name = "bedroom"
 epoch_load = "latest"
 
 params_history = {
+    "bedroom": {
+        "procedure": "bedroom1",
+        "num_epochs": 50,
+        "batch_size": 6,
+        "learning_rate": 0.001,
+        "step_size": 20,
+        "step_gamma": 0.5,
+        "latent_size": 64,
+        "max_num_points": 5,
+        "geometric_weight": 1,
+        "orientation_weight": 1,
+        "categorical_weight": 1,
+        "existence_weight": 0.003,
+        "kld_loss_weight": 0.03,
+        "dimensions_matching_weight": 0.5
+    },
     "model": {
         "procedure": "table2",
         "num_examples": 1024,
@@ -181,16 +197,22 @@ params_history = {
 }
 
 procedure_params_all = {
+    "bedroom1": {
+        "geometry_size": 2 + 2, # position and dimensions
+        "orientation_size": 2,
+        "num_categories": 2,
+        "code_size": 0,
+    },
     "table1": {
         "geometry_size": 2 + 2, # position and dimensions
         "orientation_size": 0,
-        "num_classes": 2,
+        "num_categories": 2,
         "code_size": 0,
     },
     "table2": {
         "geometry_size": 2 + 2, # position and dimensions
         "orientation_size": 0,
-        "num_classes": 2,
+        "num_categories": 2,
         "code_size": 0,
     }
 }
@@ -211,11 +233,12 @@ max_num_points = params["max_num_points"]
 
 geometry_size = procedure_params["geometry_size"]
 orientation_size = procedure_params["orientation_size"]
-num_classes = procedure_params["num_classes"]
+num_categories = procedure_params["num_categories"]
 code_size = procedure_params["code_size"]
-point_size = geometry_size + orientation_size + num_classes + code_size
+point_size = geometry_size + orientation_size + num_categories + code_size
 
 geometric_weight = params["geometric_weight"]
+orientation_weight = params["orientation_weight"]
 categorical_weight = params["categorical_weight"]
 existence_weight = params["existence_weight"]
 kld_loss_weight = params["kld_loss_weight"]

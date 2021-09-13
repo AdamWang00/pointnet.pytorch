@@ -25,8 +25,8 @@ for _ in range(NUM_GENERATIONS):
     draw.rectangle([(0, h/2), (w, h/2)], fill="gray")
 
     for idx, r in enumerate(generated_scene.squeeze().tolist()):
-        category = np.argmax(r[geometry_size:geometry_size+num_classes])
-        existence = r[geometry_size+num_classes] > 0
+        category = np.argmax(r[geometry_size:geometry_size+num_categories])
+        existence = r[geometry_size+num_categories] > 0
 
         box_nw = (w/2*(1 + r[0] - r[2]/2), h/2*(1 + r[1] - r[3]/2))
         box_se = (w/2*(1 + r[0] + r[2]/2), h/2*(1 + r[1] + r[3]/2))

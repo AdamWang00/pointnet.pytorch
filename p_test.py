@@ -39,12 +39,12 @@ for enc in range(NUM_TESTS):
     ).item())
 
     print("categorical loss:", categorical_weight * categorical_loss(
-        reconstruction_matched[:, geometry_size:geometry_size+num_classes],
+        reconstruction_matched[:, geometry_size:geometry_size+num_categories],
         target[:, geometry_size].long()
     ).item())
 
     print("existence loss:", existence_weight * existence_loss(
-        reconstruction[:, geometry_size+num_classes],
+        reconstruction[:, geometry_size+num_categories],
         target_existence
     ).item())
 
@@ -57,15 +57,15 @@ for enc in range(NUM_TESTS):
         print(f'===== MATCH {matched_index + 1} =====')
         print("Geometry Predicted:", reconstruction_matched[matched_index, 0:geometry_size].tolist())
         print("Geometry Actual:", target[matched_index, 0:geometry_size].tolist())
-        print("Category Predicted:", reconstruction_matched[matched_index, geometry_size:geometry_size+num_classes].argmax().item())
+        print("Category Predicted:", reconstruction_matched[matched_index, geometry_size:geometry_size+num_categories].argmax().item())
         print("Category Actual:", target[matched_index, geometry_size].long().item())
-        print("Existence Predicted:", reconstruction_matched[matched_index, geometry_size+num_classes].item() > 0)
+        print("Existence Predicted:", reconstruction_matched[matched_index, geometry_size+num_categories].item() > 0)
 
     for unmatched_index in range(reconstruction_unmatched.shape[0]):
         print(f'===== NON-MATCH {unmatched_index + 1} =====')
         print("Geometry Predicted:", reconstruction_unmatched[unmatched_index, 0:geometry_size].tolist())
-        print("Category Predicted:", reconstruction_unmatched[unmatched_index, geometry_size:geometry_size+num_classes].argmax().item())
-        print("Existence Predicted:", reconstruction_unmatched[unmatched_index, geometry_size+num_classes].item() > 0)
+        print("Category Predicted:", reconstruction_unmatched[unmatched_index, geometry_size:geometry_size+num_categories].argmax().item())
+        print("Existence Predicted:", reconstruction_unmatched[unmatched_index, geometry_size+num_categories].item() > 0)
 
     w, h = 500, 500
 
@@ -89,8 +89,8 @@ for enc in range(NUM_TESTS):
         )
 
     for idx, r in enumerate(reconstruction.squeeze().tolist()):
-        category = np.argmax(r[geometry_size:geometry_size+num_classes])
-        existence = r[geometry_size+num_classes] > 0
+        category = np.argmax(r[geometry_size:geometry_size+num_categories])
+        existence = r[geometry_size+num_categories] > 0
 
         box_nw = (w/2*(3 + r[0] - r[2]/2), h/2*(1 + r[1] - r[3]/2))
         box_se = (w/2*(3 + r[0] + r[2]/2), h/2*(1 + r[1] + r[3]/2))

@@ -77,15 +77,15 @@ testdataloader = torch.utils.data.DataLoader(
         num_workers=int(opt.workers))
 
 print(len(dataset), len(test_dataset))
-num_classes = len(dataset.classes)
-print('classes', num_classes)
+num_categories = len(dataset.classes)
+print('classes', num_categories)
 
 try:
     os.makedirs(opt.outf)
 except OSError:
     pass
 
-classifier = PointNetCls(k=num_classes, feature_transform=opt.feature_transform)
+classifier = PointNetCls(k=num_categories, feature_transform=opt.feature_transform)
 
 if opt.model != '':
     classifier.load_state_dict(torch.load(opt.model))

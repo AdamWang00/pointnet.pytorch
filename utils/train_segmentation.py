@@ -57,8 +57,8 @@ testdataloader = torch.utils.data.DataLoader(
     num_workers=int(opt.workers))
 
 print(len(dataset), len(test_dataset))
-num_classes = dataset.num_seg_classes
-print('classes', num_classes)
+num_categories = dataset.num_seg_classes
+print('classes', num_categories)
 try:
     os.makedirs(opt.outf)
 except OSError:
@@ -66,7 +66,7 @@ except OSError:
 
 blue = lambda x: '\033[94m' + x + '\033[0m'
 
-classifier = PointNetDenseCls(k=num_classes, feature_transform=opt.feature_transform)
+classifier = PointNetDenseCls(k=num_categories, feature_transform=opt.feature_transform)
 
 if opt.model != '':
     classifier.load_state_dict(torch.load(opt.model))
@@ -86,7 +86,7 @@ for epoch in range(opt.nepoch):
         optimizer.zero_grad()
         classifier = classifier.train()
         pred, trans, trans_feat = classifier(points)
-        pred = pred.view(-1, num_classes)
+        pred = pred.view(-1, num_categories)
         target = target.view(-1, 1)[:, 0] - 1
         #print(pred.size(), target.size())
         loss = F.nll_loss(pred, target)
@@ -105,7 +105,7 @@ for epoch in range(opt.nepoch):
             points, target = points.cuda(), target.cuda()
             classifier = classifier.eval()
             pred, _, _ = classifier(points)
-            pred = pred.view(-1, num_classes)
+            pred = pred.view(-1, num_categories)
             target = target.view(-1, 1)[:, 0] - 1
             loss = F.nll_loss(pred, target)
             pred_choice = pred.data.max(1)[1]
@@ -128,7 +128,7 @@ for i,data in tqdm(enumerate(testdataloader, 0)):
     target_np = target.cpu().data.numpy() - 1
 
     for shape_idx in range(target_np.shape[0]):
-        parts = range(num_classes)#np.unique(target_np[shape_idx])
+        parts = range(num_categories)#np.unique(target_np[shape_idx])
         part_ious = []
         for part in parts:
             I = np.sum(np.logical_and(pred_np[shape_idx] == part, target_np[shape_idx] == part))

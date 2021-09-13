@@ -3,6 +3,7 @@ import json
 import numpy as np
 import pickle
 
+from pointnet.config import *
 
 def vector_dot_matrix3(v, mat):
     rot_mat = np.mat(mat)
@@ -154,9 +155,9 @@ for scene_filename in scene_filenames:
                     ori = quaternion_to_orientation(child["rot"])
                     cat = categories_dict[furniture["category"]]
 
-                    f = np.zeros(6 + num_categories)
+                    f = np.zeros(6 + 1)
                     f[0:6] = [pos[0], pos[2], dim[0], dim[2], ori[0], ori[2]]
-                    f[6 + cat] = 1
+                    f[6] = cat
                     furniture_list.append(f)
             
             furniture_count_room = len(furniture_list)
@@ -173,8 +174,7 @@ for scene_filename in scene_filenames:
             furniture_arr[:, 0:2] -= pos_avg
 
             room_filename = os.path.splitext(scene_filename)[0] + "_" + str(room_count_scene) + ".npy"
-            with open(os.path.join(rooms_dir, room_filename), "wb") as f:
-                np.save(f, furniture_arr)
+            np.save(os.path.join(rooms_dir, room_filename), furniture_arr)
 
     room_count += room_count_scene
 

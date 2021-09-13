@@ -27,13 +27,13 @@ def orientation_loss(x, target):
     """
     assert len(x.shape) == 2
     assert x.shape == target.shape
-    return -F.cosine_similarity(x, target)
+    return torch.mean(-F.cosine_similarity(x, target))
 
 
 def categorical_loss(x_logits, target_class):
     """
-    x_logits: (N, num_classes)
-    target_class: (N) where each value l (label) is 0 <= l <= num_classes-1
+    x_logits: (N, num_categories)
+    target_class: (N) where each value l (label) is 0 <= l <= num_categories-1
     """
     # print("CATEGORICAL", x_logits, target_class)
     assert len(x_logits.shape) == 2

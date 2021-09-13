@@ -78,12 +78,12 @@ for epoch in range(NUM_EPOCHS):
                 )
             # Category
             losses[1] += categorical_weight * categorical_loss(
-                reconstruction_matched[:, geometry_size:geometry_size+num_classes],
+                reconstruction_matched[:, geometry_size:geometry_size+num_categories],
                 target[:, geometry_size].long()
             )
             # Existence
             losses[2] += existence_weight * existence_loss(
-                reconstruction[:, geometry_size+num_classes],
+                reconstruction[:, geometry_size+num_categories],
                 target_existence.cuda()
             )
 
