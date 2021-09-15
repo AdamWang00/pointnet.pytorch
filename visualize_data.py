@@ -33,6 +33,7 @@ for room_filename in os.listdir(rooms_dir):
         pos = furniture[0:2]
         dim = furniture[2:4]
         ori = furniture[4:6]
+        ori /= np.linalg.norm(ori)
         cat = categories_reverse_dict[furniture[6]]
 
         box_nw = (w/2*(1 + (pos[0] - dim[0]/2)*scale), h/2*(1 + (pos[1] - dim[1]/2)*scale))

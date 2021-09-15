@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw, ImageFont
 from dataset import SceneDataset
 
 LOAD_PATH = os.path.join("experiments", model_name, model_params_subdir, epoch_load + ".pth")
-NUM_TESTS = 5
+NUM_TESTS = 8
 
 model = PointNetVAE()
 model.load_state_dict(torch.load(LOAD_PATH))
@@ -113,6 +113,7 @@ for i in range(NUM_TESTS):
         pos = t[0:2]
         dim = t[2:4]
         ori = t[4:6]
+        ori /= np.linalg.norm(ori)
         cat = categories_reverse_dict[t[6]]
         box_nw = (w/2*(1 + (pos[0] - dim[0]/2)*scale), h/2*(1 + (pos[1] - dim[1]/2)*scale))
         box_se = (w/2*(1 + (pos[0] + dim[0]/2)*scale), h/2*(1 + (pos[1] + dim[1]/2)*scale))
@@ -132,6 +133,7 @@ for i in range(NUM_TESTS):
         pos = r[0:2]
         dim = r[2:4]
         ori = r[4:6]
+        ori /= np.linalg.norm(ori)
         cat = categories_reverse_dict[np.argmax(r[geometry_size+orientation_size:geometry_size+orientation_size+num_categories])]
         existence = r[-1] > 0
 
