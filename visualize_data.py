@@ -47,7 +47,6 @@ for room_filename in os.listdir(rooms_dir):
 
         box_center = ((box_nw[0] + box_se[0])/2, (box_nw[1] + box_se[1])/2)
         ori_indicator = (box_center[0] + ori[0] * w * dim[0] / 4 * scale, box_center[1] + ori[1] * h * dim[1] / 4 * scale)
-        print(box_center, ori_indicator)
         draw.line([box_center, ori_indicator], fill='white')
 
     img.show()

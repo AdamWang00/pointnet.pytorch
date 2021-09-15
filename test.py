@@ -124,6 +124,10 @@ for i in range(NUM_TESTS):
             outline="black"
         )
 
+        box_center = ((box_nw[0] + box_se[0])/2, (box_nw[1] + box_se[1])/2)
+        ori_indicator = (box_center[0] + ori[0] * w * dim[0] / 4 * scale, box_center[1] + ori[1] * h * dim[1] / 4 * scale)
+        draw.line([box_center, ori_indicator], fill='white')
+
     for idx, r in enumerate(reconstruction.squeeze().tolist()):
         pos = r[0:2]
         dim = r[2:4]
@@ -148,6 +152,10 @@ for i in range(NUM_TESTS):
                 width=1,
                 outline="black"
             )
+        
+        box_center = ((box_nw[0] + box_se[0])/2, (box_nw[1] + box_se[1])/2)
+        ori_indicator = (box_center[0] + ori[0] * w * dim[0] / 4 * scale, box_center[1] + ori[1] * h * dim[1] / 4 * scale)
+        draw.line([box_center, ori_indicator], fill='white')
 
         box_label_nw = (box_nw[0] + 2, box_nw[1] + 2)
         draw.text(box_label_nw, f'{idx}', fill=(255,255,255,128), font=font)
