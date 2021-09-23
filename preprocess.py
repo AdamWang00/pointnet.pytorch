@@ -71,31 +71,38 @@ def quaternion_to_orientation(qua, axis = np.array([0, 0, 1])):
     return clip_orientation(vector_dot_matrix3(axis, rotMatrix))
 
 
+SAVE = True
+
 scenes_dir = "../data/3D-FRONT"
 model_info_filepath = "../data/3D-FUTURE-model/model_info.json"
 
-room_type = "Bedroom"
-furniture_super_categories = {"Bed"} # super-category in 3D-FUTURE-model/model_info.json
-furniture_categories = {"Nightstand"} # category in 3D-FUTURE-model/model_info.json
+room_type = "Bedroom" # name of room in 3D-FRONT
+room_name = "Bedroom2" # name of subdirectory to save to
+furniture_categories = {"Nightstand", "TV Stand", "Pendant Lamp", "Coffee Table", "Ceiling Lamp", "Wardrobe"} # category in 3D-FRONT
+furniture_super_categories = {"Bed", "Cabinet/Shelf/Desk", "Chair", "Pier/Stool", "Sofa", "Table"} # super-category in 3D-FUTURE-model/model_info.json
 
-base_dir = os.path.join(data_dir, room_type)
-if not os.path.isdir(base_dir):
-    os.makedirs(base_dir)
-
-rooms_dir = os.path.join(base_dir, rooms_subdir)
-if not os.path.isdir(rooms_dir):
-    os.makedirs(rooms_dir)
+if SAVE:
+    base_dir = os.path.join(data_dir, room_name)
+    if not os.path.isdir(base_dir):
+        os.makedirs(base_dir)
+    rooms_dir = os.path.join(base_dir, rooms_subdir)
+    if not os.path.isdir(rooms_dir):
+        os.makedirs(rooms_dir)
 
 categories_dict = {}
 categories_reverse_dict = {}
+categories_count_dict = {}
+unmatched_categories_count_dict = {}
 num_categories = 0
 for idx, category in enumerate(furniture_super_categories.union(furniture_categories)):
     categories_dict[category] = idx
     categories_reverse_dict[idx] = category
+    categories_count_dict[category] = 0
     num_categories += 1
 
-with open(os.path.join(base_dir, "categories.pkl"), "wb") as f:
-    pickle.dump(categories_reverse_dict, f, pickle.HIGHEST_PROTOCOL)
+if SAVE:
+    with open(os.path.join(base_dir, "categories.pkl"), "wb") as f:
+        pickle.dump(categories_reverse_dict, f, pickle.HIGHEST_PROTOCOL)
 
 with open(model_info_filepath, "r") as f:
     model_info_json = json.load(f)
@@ -131,12 +138,18 @@ for scene_filename in scene_filenames:
             # if furniture["category"] != model["category"]:
             #     print("Categories do not match: ", furniture["category"], "AND", model["category"])
 
+            # Use category from furniture and super-category from model (there are discrepancies between furniture["category"] and model["category"], and furniture["category"] appears more similar to, but not always exactly the same as, the categories listed in categories.py)
             category = None
-            if model["super-category"] in furniture_super_categories:
+            if furniture["category"] in furniture_categories:
+                category = furniture["category"]
+            elif model["super-category"] in furniture_super_categories:
                 category = model["super-category"]
-            elif model["category"] in furniture_categories:
-                category = model["category"]
+            elif furniture["category"] in unmatched_categories_count_dict:
+                unmatched_categories_count_dict[furniture["category"]] += 1
+            else:
+                unmatched_categories_count_dict[furniture["category"]] = 1
             if category is not None:
+                categories_count_dict[category] += 1
                 furniture["category"] = category # overwrite
                 furniture_dict[furniture["uid"]] = furniture
 
@@ -171,19 +184,23 @@ for scene_filename in scene_filenames:
             pos_avg = np.average(furniture_arr[:, 0:2], axis=0)
             furniture_arr[:, 0:2] -= pos_avg
 
-            room_filename = os.path.splitext(scene_filename)[0] + "_" + str(room_count_scene) + ".npy"
-            np.save(os.path.join(rooms_dir, room_filename), furniture_arr)
+            if SAVE:
+                room_filename = os.path.splitext(scene_filename)[0] + "_" + str(room_count_scene) + ".npy"
+                np.save(os.path.join(rooms_dir, room_filename), furniture_arr)
 
     room_count += room_count_scene
 
 info = [
     f"Total rooms: {room_count}\n",
     f"Average furniture count: {furniture_count/room_count}\n",
-    f"Max furniture count: {max_furniture_count}\n"
+    f"Max furniture count: {max_furniture_count}\n",
+    f"Matched categories count: {json.dumps(categories_count_dict)}\n",
+    f"Unmatched categories count: {json.dumps(unmatched_categories_count_dict)}\n",
 ]
 
-with open(os.path.join(base_dir, "info.txt"), "w") as f:
-    f.writelines(info)
+if SAVE:
+    with open(os.path.join(base_dir, "info.txt"), "w") as f:
+        f.writelines(info)
 
 for message in info:
     print(message, end="")

@@ -190,3 +190,25 @@ def table2(batch_size):
         target_list.append(torch.Tensor(target))
     
     return (torch.Tensor(scene), target_list)
+
+def clip_orientation(d, threshold=0.0):
+    '''
+    clip to [+-1, +-1] if close enough
+    '''
+    major_orientations = [
+        np.array([0, 1]),
+        np.array([0, -1]),
+        np.array([1, 0]),
+        np.array([-1, 0]),
+    ]
+    max_index = -1
+    max_dot = 0
+    for idx, major_orientation in enumerate(major_orientations):
+        dot = np.dot(d, major_orientation)
+        if dot > max_dot:
+            max_dot = dot
+            max_index = idx
+    if max_dot > threshold:
+        return major_orientations[max_index]
+    else:
+        return d

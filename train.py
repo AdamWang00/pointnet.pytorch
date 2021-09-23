@@ -18,7 +18,7 @@ LEARNING_RATE_INITIAL = learning_rate
 STEP_SIZE = step_size
 STEP_GAMMA = step_gamma
 
-base_dir = os.path.join(data_dir, room_type)
+base_dir = os.path.join(data_dir, room_name)
 rooms_dir = os.path.join(base_dir, rooms_subdir)
 
 model = PointNetVAE()
@@ -144,7 +144,8 @@ for epoch in range(NUM_EPOCHS):
 
     scheduler.step()
 
-    # torch.save(model.state_dict(), '%s/%d.pth' % (SAVE_PATH, epoch))
+    if (epoch + 1) % 100 == 0:
+        torch.save(model.state_dict(), '%s/%d.pth' % (SAVE_PATH, epoch))
 
 torch.save(
     {
