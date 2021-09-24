@@ -1,13 +1,14 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.autograd import Variable
-from torch import autograd
 import time as t
 import os
-from pointnet.config import *
+from torch.autograd import Variable
+from torch import autograd
+from latentgan.config import *
 
-SAVE_PER_TIMES = 100
+
+SAVE_PER_ITERS = 2000
 
 
 class Generator(torch.nn.Module):
@@ -33,8 +34,7 @@ class Discriminator(torch.nn.Module):
             nn.ReLU(True),
             nn.Linear(256, 256),
             nn.ReLU(True),
-            nn.Linear(256, 256),
-            nn.ReLU(True)
+            nn.Linear(256, 1),
         )
 
     def forward(self, x):
@@ -42,12 +42,16 @@ class Discriminator(torch.nn.Module):
 
 
 class WGAN_GP(object):
-    def __init__(self, batch_size=None):
+    def __init__(self):
+        self.save_dir = os.path.join("experiments", model_name, model_params_subdir)
+        if not os.path.exists(self.save_dir):
+            os.makedirs(self.save_dir)
         self.G = Generator().cuda()
         self.D = Discriminator().cuda()
 
         # WGAN values from paper
-        self.learning_rate = 1e-4
+        self.learning_rate_g = learning_rate_g
+        self.learning_rate_g = learning_rate_d
         self.b1 = 0.5
         self.b2 = 0.999
         if batch_size == None:
@@ -72,14 +76,14 @@ class WGAN_GP(object):
         one = torch.tensor(1, dtype=torch.float)
         mone = one * -1
 
+        losses_d = []
+        losses_g = []
         for g_iter in range(generator_iters):
             # Train Discriminator
             for p in self.D.parameters():
                 p.requires_grad = True
 
-            d_loss_real = 0
-            d_loss_fake = 0
-
+            d_loss_total = 0
             for d_iter in range(self.critic_iter):
                 self.D.zero_grad()
 
@@ -102,7 +106,10 @@ class WGAN_GP(object):
                 d_loss = d_loss_fake - d_loss_real + gradient_penalty
                 # Wasserstein_D = d_loss_real - d_loss_fake
                 self.d_optimizer.step()
-                print(f'  Discriminator iteration: {d_iter + 1}/{self.critic_iter}, loss: {d_loss}')
+                # print(f'  Discriminator iteration: {d_iter + 1}/{self.critic_iter}, loss: {d_loss}')
+                d_loss_total += d_loss.item()
+
+            losses_d.append(d_loss_total)
 
             # Train Generator
             for p in self.D.parameters():
@@ -119,22 +126,33 @@ class WGAN_GP(object):
 
             self.g_optimizer.step()
 
-            print(f'Generator iteration: {g_iter + 1}/{generator_iters}, g_loss: {g_loss}')
+            # print(f'Generator iteration: {g_iter + 1}/{generator_iters}, g_loss: {g_loss}')
+            losses_g.append(g_loss)
 
-            if (g_iter) % SAVE_PER_TIMES == 0:
-                self.save_model()
+            print(f'Generator iteration: {g_iter + 1}/{generator_iters}, g_loss: {g_loss}, d_loss: {d_loss_total}')
+
+            if (g_iter) % SAVE_PER_ITERS == 0:
+                self.save_model(g_iter)
 
         self.t_end = t.time()
         print('Time of training: {}'.format((self.t_end - self.t_begin)))
 
         # Save the trained parameters
-        self.save_model()
+        self.save_model(g_iter)
+
+        torch.save(
+            {
+                "loss_d": losses_d,
+                "loss_g": losses_g,
+            },
+            "Logs.pth"
+        )
 
 
     def generate(self, z=None):
         if z == None:
             z = torch.randn(1, 64)
-        samples = self.G(z)
+        samples = self.G(z.cuda())
         return samples
 
 
@@ -162,10 +180,9 @@ class WGAN_GP(object):
         return grad_penalty
 
 
-    def save_model(self):
-        torch.save(self.G.state_dict(), './generator.pkl')
-        torch.save(self.D.state_dict(), './discriminator.pkl')
-        print('Models save to ./generator.pkl & ./discriminator.pkl ')
+    def save_model(self, iter):
+        torch.save(self.G.state_dict(), '%s/%d_g.pth' % (self.save_dir, iter))
+        torch.save(self.D.state_dict(), '%s/%d_d.pth' % (self.save_dir, iter))
 
 
     def load_model(self, D_model_filename, G_model_filename):

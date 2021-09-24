@@ -6,35 +6,15 @@ from pointnet.config import *
 from model import WGAN_GP
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+from utils import clip_orientation
 
 AE_LOAD_PATH = os.path.join("..", "experiments", model_name, model_params_subdir, epoch_load + ".pth")
 NUM_GENERATIONS = 8
-
-# def clip_orientation(d, threshold=0.0):
-#     '''
-#     clip to [+-1, +-1] if close enough
-#     '''
-#     major_orientations = [
-#         np.array([0, 1]),
-#         np.array([0, -1]),
-#         np.array([1, 0]),
-#         np.array([-1, 0]),
-#     ]
-#     max_index = -1
-#     max_dot = 0
-#     for idx, major_orientation in enumerate(major_orientations):
-#         dot = np.dot(d, major_orientation)
-#         if dot > max_dot:
-#             max_dot = dot
-#             max_index = idx
-#     if max_dot > threshold:
-#         return major_orientations[max_index]
-#     else:
-#         return d
+HIDE_NONEXISTENT_OUTPUTS = True
 
 model_ae = PointNetVAE()
 model_ae.load_state_dict(torch.load(AE_LOAD_PATH))
-model_ae = model_ae.eval()
+model_ae = model_ae.cuda().eval()
 
 model_gan = WGAN_GP()
 model_gan.load_model("discriminator.pkl", "generator.pkl")
@@ -51,10 +31,9 @@ with open(os.path.join(base_dir, "categories.pkl"), "rb") as f:
 for _ in range(NUM_GENERATIONS):
     latent_code_sample = model_gan.generate()
     generated_scene = model_ae.generate(latent_code=latent_code_sample)
-    print(generated_scene)
 
     w, h = 500, 500
-    scale = 0.25
+    scale = 0.2
 
     img = Image.new("RGB", (w, h), color="white")
     draw = ImageDraw.Draw(img)
@@ -62,7 +41,7 @@ for _ in range(NUM_GENERATIONS):
     draw.rectangle([(w/2, 0), (w/2, h)], fill="gray")
     draw.rectangle([(0, h/2), (w, h/2)], fill="gray")
 
-    generated_scene = generated_scene.squeeze().detach()
+    generated_scene = generated_scene.squeeze().detach().cpu()
     areas = generated_scene[:, 2] * generated_scene[:, 3]
     indices_area_descending = np.argsort(-areas)
     generated_scene = generated_scene[indices_area_descending]
@@ -73,6 +52,9 @@ for _ in range(NUM_GENERATIONS):
         ori = clip_orientation(ori / np.linalg.norm(ori))
         cat = categories_reverse_dict[np.argmax(r[geometry_size+orientation_size:geometry_size+orientation_size+num_categories])]
         existence = r[-1] > 0
+
+        if HIDE_NONEXISTENT_OUTPUTS and not existence:
+            continue
 
         if (ori[1] == 0): # Need to flip dimensions if oriented towards East/West
             dim[0], dim[1] = dim[1], dim[0]
