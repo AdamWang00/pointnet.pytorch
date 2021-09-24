@@ -109,7 +109,7 @@ class PointNetEncoder(nn.Module):
         # VAE (no activation)
         mu = self.fc_mu(x)
         log_var = self.fc_var(x)
-        x = self.reparameterize(mu, log_var)
+        x = self.reparameterize(mu, log_var) # x=mu during eval
 
         if self.global_feat:
             return x, trans, trans_feat, mu, log_var

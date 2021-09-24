@@ -3,28 +3,54 @@ import torch
 import pickle
 from pointnet.model import PointNetVAE
 from pointnet.config import *
+from model import WGAN_GP
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-from utils import clip_orientation
 
-LOAD_PATH = os.path.join("experiments", model_name, model_params_subdir, epoch_load + ".pth")
+AE_LOAD_PATH = os.path.join("..", "experiments", model_name, model_params_subdir, epoch_load + ".pth")
 NUM_GENERATIONS = 8
-HIDE_NONEXISTENT_OUTPUTS = True
 
-model = PointNetVAE()
-model.load_state_dict(torch.load(LOAD_PATH))
-model = model.eval()
+# def clip_orientation(d, threshold=0.0):
+#     '''
+#     clip to [+-1, +-1] if close enough
+#     '''
+#     major_orientations = [
+#         np.array([0, 1]),
+#         np.array([0, -1]),
+#         np.array([1, 0]),
+#         np.array([-1, 0]),
+#     ]
+#     max_index = -1
+#     max_dot = 0
+#     for idx, major_orientation in enumerate(major_orientations):
+#         dot = np.dot(d, major_orientation)
+#         if dot > max_dot:
+#             max_dot = dot
+#             max_index = idx
+#     if max_dot > threshold:
+#         return major_orientations[max_index]
+#     else:
+#         return d
+
+model_ae = PointNetVAE()
+model_ae.load_state_dict(torch.load(AE_LOAD_PATH))
+model_ae = model_ae.eval()
+
+model_gan = WGAN_GP()
+model_gan.load_model("discriminator.pkl", "generator.pkl")
+model_gan.eval()
 
 font = ImageFont.truetype('/home/awang/Roboto-Regular.ttf', 12)
 
-base_dir = os.path.join(data_dir, room_name)
+base_dir = os.path.join("..", data_dir, room_name)
 rooms_dir = os.path.join(base_dir, rooms_subdir)
 
 with open(os.path.join(base_dir, "categories.pkl"), "rb") as f:
     categories_reverse_dict = pickle.load(f)
 
 for _ in range(NUM_GENERATIONS):
-    generated_scene = model.generate()
+    latent_code_sample = model_gan.generate()
+    generated_scene = model_ae.generate(latent_code=latent_code_sample)
     print(generated_scene)
 
     w, h = 500, 500
@@ -47,9 +73,6 @@ for _ in range(NUM_GENERATIONS):
         ori = clip_orientation(ori / np.linalg.norm(ori))
         cat = categories_reverse_dict[np.argmax(r[geometry_size+orientation_size:geometry_size+orientation_size+num_categories])]
         existence = r[-1] > 0
-
-        if HIDE_NONEXISTENT_OUTPUTS and not existence:
-            continue
 
         if (ori[1] == 0): # Need to flip dimensions if oriented towards East/West
             dim[0], dim[1] = dim[1], dim[0]
