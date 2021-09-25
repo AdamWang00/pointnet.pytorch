@@ -10,6 +10,8 @@ from pointnetvae.dataset import SceneDataset
 
 LOAD_PATH = os.path.join("experiments", model_name, model_params_subdir, epoch_load + ".pth")
 NUM_TESTS = 8
+DATASET_OFFSET = 8
+HIDE_NONEXISTENT_OUTPUTS = True
 
 model = PointNetVAE()
 model.load_state_dict(torch.load(LOAD_PATH))
@@ -25,7 +27,7 @@ with open(os.path.join(base_dir, "categories.pkl"), "rb") as f:
 
 scene_dataset = SceneDataset(rooms_dir, max_num_points)
 
-for i in range(NUM_TESTS):
+for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_TESTS):
     scene, target = scene_dataset.__getitem__(i)
     scene = scene.unsqueeze(0)
 
@@ -137,6 +139,9 @@ for i in range(NUM_TESTS):
         ori = clip_orientation(ori / np.linalg.norm(ori))
         cat = categories_reverse_dict[np.argmax(r[geometry_size+orientation_size:geometry_size+orientation_size+num_categories])]
         existence = r[-1] > 0
+
+        if HIDE_NONEXISTENT_OUTPUTS and not existence:
+            continue
 
         if (ori[1] == 0): # Need to flip dimensions if oriented towards East/West
             dim[0], dim[1] = dim[1], dim[0]

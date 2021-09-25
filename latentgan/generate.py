@@ -1,28 +1,30 @@
 import os
 import torch
 import pickle
-from pointnet.model import PointNetVAE
-from pointnet.config import *
-from model import WGAN_GP
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-from utils import clip_orientation
+from latentgan.config import *
+from latentgan.model import WGAN_GP
+from pointnetvae.model import PointNetVAE
+from pointnetvae.utils import clip_orientation
 
-AE_LOAD_PATH = os.path.join("..", "experiments", model_name, model_params_subdir, epoch_load + ".pth")
 NUM_GENERATIONS = 8
 HIDE_NONEXISTENT_OUTPUTS = True
 
+ae_load_path = os.path.join("..", ae_model_class, "experiments", ae_model_name, model_params_subdir, ae_epoch_load + ".pth")
+gan_load_path = os.path.join("experiments", model_name, model_params_subdir)
+
 model_ae = PointNetVAE()
-model_ae.load_state_dict(torch.load(AE_LOAD_PATH))
+model_ae.load_state_dict(torch.load(ae_load_path))
 model_ae = model_ae.cuda().eval()
 
 model_gan = WGAN_GP()
-model_gan.load_model("discriminator.pkl", "generator.pkl")
+model_gan.load_model(gan_load_path, epoch_load)
 model_gan.eval()
 
 font = ImageFont.truetype('/home/awang/Roboto-Regular.ttf', 12)
 
-base_dir = os.path.join("..", data_dir, room_name)
+base_dir = os.path.join(data_dir, room_name)
 rooms_dir = os.path.join(base_dir, rooms_subdir)
 
 with open(os.path.join(base_dir, "categories.pkl"), "rb") as f:

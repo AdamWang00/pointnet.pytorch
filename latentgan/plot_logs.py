@@ -1,12 +1,14 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import os
+from latentgan.config import *
 
 def running_mean(x, N):
     cumsum = np.cumsum(np.insert(x, 0, 0))
     return (cumsum[N:] - cumsum[:-N]) / float(N)
 
-logs = torch.load("Logs.pth")
+logs = torch.load(os.path.join("experiments", model_name, "Logs.pth"))
 
 num_iters = len(logs["loss_g"])
 

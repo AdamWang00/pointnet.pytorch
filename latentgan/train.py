@@ -6,7 +6,7 @@ from latentgan.dataset import SceneLatentDataset
 from latentgan.config import *
 from pointnetvae.model import PointNetVAE
 
-data_dir = os.path.join("..", data_dir, room_name)
+data_dir = os.path.join(data_dir, room_name)
 data_rooms_dir = os.path.join(data_dir, rooms_subdir)
 ae_load_path = os.path.join("..", ae_model_class, "experiments", ae_model_name, model_params_subdir, ae_epoch_load + ".pth")
 

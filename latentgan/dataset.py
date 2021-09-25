@@ -2,7 +2,7 @@ import os
 import torch
 import numpy as np
 
-from pointnet.config import *
+from latentgan.config import *
 
 
 class SceneLatentDataset(torch.utils.data.Dataset):

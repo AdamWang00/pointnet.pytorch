@@ -51,7 +51,7 @@ class WGAN_GP(object):
 
         # WGAN values from paper
         self.learning_rate_g = learning_rate_g
-        self.learning_rate_g = learning_rate_d
+        self.learning_rate_d = learning_rate_d
         self.b1 = 0.5
         self.b2 = 0.999
         if batch_size == None:
@@ -60,8 +60,8 @@ class WGAN_GP(object):
             self.batch_size = batch_size
 
         # WGAN_gradient penalty uses ADAM
-        self.d_optimizer = optim.Adam(self.D.parameters(), lr=self.learning_rate, betas=(self.b1, self.b2))
-        self.g_optimizer = optim.Adam(self.G.parameters(), lr=self.learning_rate, betas=(self.b1, self.b2))
+        self.d_optimizer = optim.Adam(self.D.parameters(), lr=self.learning_rate_g, betas=(self.b1, self.b2))
+        self.g_optimizer = optim.Adam(self.G.parameters(), lr=self.learning_rate_d, betas=(self.b1, self.b2))
 
         self.critic_iter = 5
         self.lambda_term = 10
@@ -78,7 +78,7 @@ class WGAN_GP(object):
 
         losses_d = []
         losses_g = []
-        for g_iter in range(generator_iters):
+        for g_iter in range(1, generator_iters + 1):
             # Train Discriminator
             for p in self.D.parameters():
                 p.requires_grad = True
@@ -126,10 +126,10 @@ class WGAN_GP(object):
 
             self.g_optimizer.step()
 
-            # print(f'Generator iteration: {g_iter + 1}/{generator_iters}, g_loss: {g_loss}')
+            # print(f'Generator iteration: {g_iter}/{generator_iters}, g_loss: {g_loss}')
             losses_g.append(g_loss)
 
-            print(f'Generator iteration: {g_iter + 1}/{generator_iters}, g_loss: {g_loss}, d_loss: {d_loss_total}')
+            print(f'Generator iteration: {g_iter}/{generator_iters}, g_loss: {g_loss}, d_loss: {d_loss_total}')
 
             if (g_iter) % SAVE_PER_ITERS == 0:
                 self.save_model(g_iter)
@@ -138,14 +138,14 @@ class WGAN_GP(object):
         print('Time of training: {}'.format((self.t_end - self.t_begin)))
 
         # Save the trained parameters
-        self.save_model(g_iter)
+        self.save_model("latest")
 
         torch.save(
             {
                 "loss_d": losses_d,
                 "loss_g": losses_g,
             },
-            "Logs.pth"
+            os.path.join("experiments", model_name, "Logs.pth")
         )
 
 
@@ -181,17 +181,17 @@ class WGAN_GP(object):
 
 
     def save_model(self, iter):
-        torch.save(self.G.state_dict(), '%s/%d_g.pth' % (self.save_dir, iter))
-        torch.save(self.D.state_dict(), '%s/%d_d.pth' % (self.save_dir, iter))
+        torch.save(self.G.state_dict(), os.path.join(self.save_dir, str(iter) + "_g.pth"))
+        torch.save(self.D.state_dict(), os.path.join(self.save_dir, str(iter) + "_d.pth"))
 
 
-    def load_model(self, D_model_filename, G_model_filename):
-        D_model_path = os.path.join(os.getcwd(), D_model_filename)
-        G_model_path = os.path.join(os.getcwd(), G_model_filename)
-        self.D.load_state_dict(torch.load(D_model_path))
-        self.G.load_state_dict(torch.load(G_model_path))
-        print('Generator model loaded from {}.'.format(G_model_path))
-        print('Discriminator model loaded from {}-'.format(D_model_path))
+    def load_model(self, load_dir, iter):
+        filepath_d = os.path.join(load_dir, str(iter) + "_d.pth")
+        filepath_g = os.path.join(load_dir, str(iter) + "_g.pth")
+        self.D.load_state_dict(torch.load(filepath_d))
+        self.G.load_state_dict(torch.load(filepath_g))
+        print('Generator model loaded from {}.'.format(filepath_g))
+        print('Discriminator model loaded from {}-'.format(filepath_d))
 
 
     def get_infinite_batches(self, data_loader):
