@@ -8,7 +8,7 @@ from pointnetvae.config import *
 from pointnetvae.utils import clip_orientation
 
 LOAD_PATH = os.path.join("experiments", model_name, model_params_subdir, epoch_load + ".pth")
-NUM_GENERATIONS = 8
+NUM_GENERATIONS = 16
 HIDE_NONEXISTENT_OUTPUTS = True
 
 model = PointNetVAE()

@@ -5,7 +5,8 @@ from PIL import Image, ImageDraw, ImageFont
 from pointnetvae.config import *
 from pointnetvae.utils import clip_orientation
 
-NUM_VISUALIZATIONS = 8
+NUM_VISUALIZATIONS = 40
+DATASET_OFFSET = 80
 
 # font = ImageFont.truetype('/home/awang/Roboto-Regular.ttf', 12)
 
@@ -17,8 +18,11 @@ with open(os.path.join(base_dir, "categories.pkl"), "rb") as f:
 
 c = 0
 for room_filename in os.listdir(rooms_dir):
-    if c == NUM_VISUALIZATIONS:
+    if c == NUM_VISUALIZATIONS + DATASET_OFFSET:
         break
+    elif c < DATASET_OFFSET:
+        c += 1
+        continue
     else:
         c += 1
 

@@ -13,7 +13,7 @@ ae_load_path = os.path.join("..", ae_model_class, "experiments", ae_model_name, 
 model_ae = PointNetVAE()
 model_ae.load_state_dict(torch.load(ae_load_path))
 
-scene_latent_dataset = SceneLatentDataset(data_rooms_dir, max_num_points, model_ae.encoder)
+scene_latent_dataset = SceneLatentDataset(data_rooms_dir, max_num_points, model_ae.encoder, load_ram=True)
 
 BATCH_SIZE = batch_size
 NUM_EPOCHS = num_epochs

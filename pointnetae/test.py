@@ -3,17 +3,17 @@ import torch
 import numpy as np
 import pickle
 from PIL import Image, ImageDraw, ImageFont
-from pointnetvae.model import PointNetVAE
-from pointnetvae.config import *
-from pointnetvae.utils import *
-from pointnetvae.dataset import SceneDataset
+from pointnetae.model import PointNetAE
+from pointnetae.config import *
+from pointnetae.utils import *
+from pointnetae.dataset import SceneDataset
 
 LOAD_PATH = os.path.join("experiments", model_name, model_params_subdir, epoch_load + ".pth")
 NUM_TESTS = 8
 DATASET_OFFSET = 0
 HIDE_NONEXISTENT_OUTPUTS = True
 
-model = PointNetVAE()
+model = PointNetAE()
 model.load_state_dict(torch.load(LOAD_PATH))
 model = model.eval()
 
@@ -31,7 +31,7 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_TESTS):
     scene, target = scene_dataset.__getitem__(i)
     scene = scene.unsqueeze(0)
 
-    reconstruction, _, _, mu, log_var = model(scene.transpose(2, 1))
+    reconstruction, _, _ = model(scene.transpose(2, 1))
     reconstruction = reconstruction[0]
 
     cost_mat_position = get_cost_matrix_2d(reconstruction[:, 0:2], target[:, 0:2])
@@ -66,11 +66,6 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_TESTS):
     print("existence loss:", existence_weight * existence_loss(
         reconstruction[:, geometry_size+orientation_size+num_categories],
         target_existence
-    ).item())
-
-    print("kld loss:", kld_loss_weight * kld_loss(
-        mu,
-        log_var
     ).item())
 
     for matched_index in range(target.shape[0]):

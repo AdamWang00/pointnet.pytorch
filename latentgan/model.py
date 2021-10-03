@@ -8,34 +8,34 @@ from torch import autograd
 from latentgan.config import *
 
 
-SAVE_PER_ITERS = 2000
+SAVE_PER_ITERS = 10000
 
 
 class Generator(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, z_dim, hidden_dims, out_dim):
         super().__init__()
-        self.main_module = nn.Sequential(
-            nn.Linear(64, 128),
-            nn.ReLU(True),
-            nn.Linear(128, 256),
-            nn.ReLU(True),
-            nn.Linear(256, 256)
-        )
+        dims = [z_dim] + hidden_dims
+        modules = []
+        for i in range(len(dims) - 1):
+            modules.append(nn.Linear(dims[i], dims[i + 1]))
+            modules.append(nn.ReLU(True))
+        modules.append(nn.Linear(dims[-1], out_dim))
+        self.main_module = nn.Sequential(*modules)
 
     def forward(self, x):
         return self.main_module(x)
 
 
 class Discriminator(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, in_dim, hidden_dims, out_dim=1):
         super().__init__()
-        self.main_module = nn.Sequential(
-            nn.Linear(256, 256),
-            nn.ReLU(True),
-            nn.Linear(256, 256),
-            nn.ReLU(True),
-            nn.Linear(256, 1),
-        )
+        dims = [in_dim] + hidden_dims
+        modules = []
+        for i in range(len(dims) - 1):
+            modules.append(nn.Linear(dims[i], dims[i + 1]))
+            modules.append(nn.ReLU(True))
+        modules.append(nn.Linear(dims[-1], out_dim))
+        self.main_module = nn.Sequential(*modules)
 
     def forward(self, x):
         return self.main_module(x)
@@ -46,8 +46,8 @@ class WGAN_GP(object):
         self.save_dir = os.path.join("experiments", model_name, model_params_subdir)
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
-        self.G = Generator().cuda()
-        self.D = Discriminator().cuda()
+        self.G = Generator(z_dim, hidden_dims_g, latent_size).cuda()
+        self.D = Discriminator(latent_size, hidden_dims_d).cuda()
 
         # WGAN values from paper
         self.learning_rate_g = learning_rate_g
@@ -93,7 +93,7 @@ class WGAN_GP(object):
                 d_loss_real = d_loss_real.mean()
                 d_loss_real.backward(mone)
 
-                z = torch.randn(self.batch_size, 64).cuda()
+                z = torch.randn(self.batch_size, z_dim).cuda()
 
                 fake_latent_codes = self.G(z)
                 d_loss_fake = self.D(fake_latent_codes)
@@ -117,7 +117,7 @@ class WGAN_GP(object):
 
             self.G.zero_grad()
 
-            z = torch.randn(self.batch_size, 64).cuda()
+            z = torch.randn(self.batch_size, z_dim).cuda()
 
             fake_latent_codes = self.G(z)
             g_loss = self.D(fake_latent_codes)
@@ -133,6 +133,13 @@ class WGAN_GP(object):
 
             if (g_iter) % SAVE_PER_ITERS == 0:
                 self.save_model(g_iter)
+                torch.save(
+                    {
+                        "loss_d": losses_d,
+                        "loss_g": losses_g,
+                    },
+                    os.path.join("experiments", model_name, "Logs.pth")
+                )
 
         self.t_end = t.time()
         print('Time of training: {}'.format((self.t_end - self.t_begin)))
@@ -149,10 +156,10 @@ class WGAN_GP(object):
         )
 
 
-    def generate(self, z=None):
+    def generate(self, num_codes=1, z=None):
         if z == None:
-            z = torch.randn(1, 64)
-        samples = self.G(z.cuda())
+            z = torch.randn(num_codes, z_dim)
+        samples = self.G(z.cuda()).detach()
         return samples
 
 

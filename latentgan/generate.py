@@ -8,7 +8,7 @@ from latentgan.model import WGAN_GP
 from pointnetvae.model import PointNetVAE
 from pointnetvae.utils import clip_orientation
 
-NUM_GENERATIONS = 8
+NUM_GENERATIONS = 16
 HIDE_NONEXISTENT_OUTPUTS = True
 
 ae_load_path = os.path.join("..", ae_model_class, "experiments", ae_model_name, model_params_subdir, ae_epoch_load + ".pth")
