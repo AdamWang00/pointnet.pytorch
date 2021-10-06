@@ -1,0 +1,14 @@
+bedroom_latent_1a: 80000 0.101
+bedroom_latent_1b: 80000 0.061
+bedroom_latent_1c: 60000 0.059
+bedroom_latent_1d: 70000 0.044
+
+bedroom_latent_2a: 50000 5.14
+bedroom_latent_2b: 80000 6.04
+bedroom_latent_2c: 80000 5.88
+bedroom_latent_2d: 80000 8.78
+
+bedroom_latent_3a: 200000 14.9
+bedroom_latent_3b: 200000 16.8
+bedroom_latent_3c: 200000 15.9
+bedroom_latent_3d: 200000 16.3

@@ -5,35 +5,22 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from latentgan.config import *
 from latentgan.model import WGAN_GP
-from pointnetvae.model import PointNetVAE
+if ae_model_class == "pointnetvae":
+    from pointnetvae.model import PointNetVAE
+elif ae_model_class == "pointnetae":
+    from pointnetae.model import PointNetAE
 from pointnetvae.utils import clip_orientation
 
 NUM_GENERATIONS = 16
 HIDE_NONEXISTENT_OUTPUTS = True
 
-ae_load_path = os.path.join("..", ae_model_class, "experiments", ae_model_name, model_params_subdir, ae_epoch_load + ".pth")
-gan_load_path = os.path.join("experiments", model_name, model_params_subdir)
-
-model_ae = PointNetVAE()
-model_ae.load_state_dict(torch.load(ae_load_path))
-model_ae = model_ae.cuda().eval()
-
-model_gan = WGAN_GP()
-model_gan.load_model(gan_load_path, epoch_load)
-model_gan.eval()
-
-font = ImageFont.truetype('/home/awang/Roboto-Regular.ttf', 12)
-
 base_dir = os.path.join(data_dir, room_name)
-rooms_dir = os.path.join(base_dir, rooms_subdir)
-
 with open(os.path.join(base_dir, "categories.pkl"), "rb") as f:
     categories_reverse_dict = pickle.load(f)
 
-for _ in range(NUM_GENERATIONS):
-    latent_code_sample = model_gan.generate()
-    generated_scene = model_ae.generate(latent_code=latent_code_sample)
+font = ImageFont.truetype('/home/awang/Roboto-Regular.ttf', 12)
 
+def draw_generated_scene(generated_scene):
     w, h = 500, 500
     scale = 0.2
 
@@ -94,3 +81,23 @@ for _ in range(NUM_GENERATIONS):
         draw.text(box_label_nw, f'{idx}', fill=(200,200,200), font=font)
 
     img.show()
+
+if __name__ == "__main__":
+    ae_load_path = os.path.join("..", ae_model_class, "experiments", ae_model_name, model_params_subdir, ae_epoch_load + ".pth")
+    gan_load_path = os.path.join("experiments", model_name, model_params_subdir)
+
+    if ae_model_class == "pointnetvae":
+        model_ae = PointNetVAE()
+    elif ae_model_class == "pointnetae":
+        model_ae = PointNetAE()
+    model_ae.load_state_dict(torch.load(ae_load_path))
+    model_ae = model_ae.cuda().eval()
+
+    model_gan = WGAN_GP()
+    model_gan.load_model(gan_load_path, iter_load)
+    model_gan.eval()
+
+    for _ in range(NUM_GENERATIONS):
+        latent_code_sample = model_gan.generate()
+        generated_scene = model_ae.generate(latent_code=latent_code_sample)
+        draw_generated_scene(generated_scene)

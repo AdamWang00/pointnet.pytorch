@@ -8,7 +8,7 @@ from torch import autograd
 from latentgan.config import *
 
 
-SAVE_PER_ITERS = 10000
+SAVE_PER_ITERS = save_per_iters
 
 
 class Generator(torch.nn.Module):

@@ -128,14 +128,15 @@ class PointNetAE(nn.Module):
         if latent_code is None:
             x = torch.randn(1, latent_size)
         else:
-            assert latent_code.shape == (1, latent_size)
             x = latent_code
         x = F.relu(self.bn1(self.fc1(x)))
         x = F.relu(self.bn2(self.fc2(x)))
         x = self.fc3(x)
 
-        x = x.view(max_num_points, point_size + 1)
-
+        if latent_code.shape[0] == 1:
+            x = x.view(max_num_points, point_size + 1)
+        else:
+            x = x.view(-1, max_num_points, point_size + 1)
         return x
 
 
