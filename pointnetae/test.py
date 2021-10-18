@@ -9,7 +9,7 @@ from pointnetae.utils import *
 from pointnetae.dataset import SceneDataset
 
 LOAD_PATH = os.path.join("experiments", model_name, model_params_subdir, epoch_load + ".pth")
-NUM_TESTS = 8
+NUM_TESTS = 1
 DATASET_OFFSET = 0
 HIDE_NONEXISTENT_OUTPUTS = True
 
@@ -31,7 +31,7 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_TESTS):
     scene, target = scene_dataset.__getitem__(i)
     scene = scene.unsqueeze(0)
 
-    reconstruction, _, _ = model(scene.transpose(2, 1))
+    reconstruction, _, _, _ = model(scene.transpose(2, 1))
     reconstruction = reconstruction[0]
 
     cost_mat_position = get_cost_matrix_2d(reconstruction[:, 0:2], target[:, 0:2])
@@ -133,7 +133,7 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_TESTS):
         ori = r[4:6]
         ori = clip_orientation(ori / np.linalg.norm(ori))
         cat = categories_reverse_dict[np.argmax(r[geometry_size+orientation_size:geometry_size+orientation_size+num_categories])]
-        existence = r[-1] > 0
+        existence = r[geometry_size+orientation_size+num_categories] > 0
 
         if HIDE_NONEXISTENT_OUTPUTS and not existence:
             continue

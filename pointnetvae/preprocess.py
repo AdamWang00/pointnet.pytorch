@@ -2,7 +2,9 @@ import os
 import json
 import numpy as np
 import pickle
-from pointnetvae.config import *
+import torch
+from pointnetvae.config import data_dir, rooms_subdir    
+
 
 def vector_dot_matrix3(v, mat):
     rot_mat = np.mat(mat)
@@ -72,13 +74,36 @@ def quaternion_to_orientation(qua, axis = np.array([0, 0, 1])):
 
 SAVE = True
 
-scenes_dir = "../../data/3D-FRONT"
-model_info_filepath = "../../data/3D-FUTURE-model/model_info.json"
-
 room_type = "Bedroom" # name of room in 3D-FRONT
-room_name = "Bedroom2" # name of subdirectory to save to
-furniture_categories = {"Nightstand", "TV Stand", "Coffee Table", "Wardrobe"} # category in 3D-FRONT
-furniture_super_categories = {"Bed", "Cabinet/Shelf/Desk", "Chair", "Pier/Stool", "Sofa", "Table"} # super-category in 3D-FUTURE-model/model_info.json
+room_name = "Bedroom3" # name of subdirectory to save to
+
+super_categories = {'bed', 'nightstand'}
+
+scenes_dir = "../../data/3D-FRONT"
+model_info_filepath = "../../data/model_info.json"
+
+model_category_to_super_category = {'armchair': 'chair', 'Lounge Chair / Cafe Chair / Office Chair': 'chair', 'Pendant Lamp': 'lighting', 'Coffee Table': 'largeTable', 'Corner/Side Table': 'smallTable', 'Dining Table': 'largeTable', 'King-size Bed': 'bed', 'Nightstand': 'nightstand', 'Bookcase / jewelry Armoire': 'cabinet', 'Three-Seat / Multi-set sofa': 'largeSofa', 'TV Stand': 'tvStand', 'Drawer Chest / Corner cabinet': 'cabinet', 'Wardrobe': 'cabinet', 'Footstool / Sofastool / Bed End Stool / Stool': 'smallStool', 'Sideboard / Side Cabinet / Console': 'cabinet', 'Ceiling Lamp': 'lighting', 'Children Cabinet': 'cabinet', 'Bed Frame': 'bed', 'Round End Table': 'smallTable', 'Desk': 'largeTable', 'Single bed': 'bed', 'Loveseat Sofa': 'largeSofa', 'Dining Chair': 'chair', 'Barstool': 'chair', 'Lazy Sofa': 'chair', 'L-shaped Sofa': 'largeSofa', 'Wine Cooler': 'cabinet', 'Dressing Table': 'largeTable', 'Dressing Chair': 'chair', 'Kids Bed': 'bed', 'Classic Chinese Chair': 'chair', 'Bunk Bed': 'bed', 'Chaise Longue Sofa': 'largeSofa', 'Shelf': 'cabinet', '衣帽架': 'other', '脚凳/墩': 'other', '博古架': 'other', '置物架': 'other', '装饰架': 'other'}
+
+deepsdf_experiments_dir = "../../DeepSDF/experiments"
+deepsdf_latent_code_subpaths = {
+    "bed": "bed1/LatentCodes/1000.pth",
+    "nightstand": "nightstand1/LatentCodes/1000.pth"
+}
+deepsdf_latent_codes = {} # model_id -> np.array
+for super_category in super_categories:
+    deepsdf_split_path = os.path.join(deepsdf_experiments_dir, "splits", super_category + ".json")
+    with open(deepsdf_split_path, "r") as f:
+        split = json.load(f)
+    deepsdf_latent_code_path = os.path.join(deepsdf_experiments_dir, deepsdf_latent_code_subpaths[super_category])
+    latent_codes = torch.load(deepsdf_latent_code_path)["latent_codes"]["weight"].numpy()
+
+    latent_code_idx = 0
+    for dataset in split:
+        for category in split[dataset]:
+            for model_id in split[dataset][category]:
+                deepsdf_latent_codes[model_id] = latent_codes[latent_code_idx, :]
+                latent_code_idx += 1
+    assert latent_code_idx == latent_codes.shape[0]
 
 if SAVE:
     base_dir = os.path.join(data_dir, room_name)
@@ -90,13 +115,15 @@ if SAVE:
 
 categories_dict = {}
 categories_reverse_dict = {}
-categories_count_dict = {}
-unmatched_categories_count_dict = {}
+categories_count_dict_scene = {} # count of number of scenes with this cat
+unmatched_categories_count_dict_scene = {} # count of number of scenes with this cat
+categories_count_dict_room = {} # total number of furniture with this cat in room_type (used to experiment with dividing/grouping categories)
 num_categories = 0
-for idx, category in enumerate(furniture_super_categories.union(furniture_categories)):
+for idx, category in enumerate(super_categories):
     categories_dict[category] = idx
     categories_reverse_dict[idx] = category
-    categories_count_dict[category] = 0
+    categories_count_dict_scene[category] = 0
+    categories_count_dict_room[category] = 0
     num_categories += 1
 
 if SAVE:
@@ -132,43 +159,51 @@ for scene_filename in scene_filenames:
     for furniture in scene_json["furniture"]:
         if "valid" in furniture and furniture["valid"]:
             jid = furniture["jid"]
+
             model = model_dict[jid]
-
-            # if furniture["category"] != model["category"]:
-            #     print("Categories do not match: ", furniture["category"], "AND", model["category"])
-
-            # Use category from furniture and super-category from model (there are discrepancies between furniture["category"] and model["category"], and furniture["category"] appears more similar to, but not always exactly the same as, the categories listed in categories.py)
-            category = None
-            if furniture["category"] in furniture_categories:
-                category = furniture["category"]
-            elif model["super-category"] in furniture_super_categories:
-                category = model["super-category"]
-            elif furniture["category"] in unmatched_categories_count_dict:
-                unmatched_categories_count_dict[furniture["category"]] += 1
-            else:
-                unmatched_categories_count_dict[furniture["category"]] = 1
-            if category is not None:
-                categories_count_dict[category] += 1
-                furniture["category"] = category # overwrite
+            model_super_category = model_category_to_super_category[model["category"]]
+            if model_super_category in super_categories:
+                categories_count_dict_scene[model_super_category] += 1
+                furniture["category"] = model_super_category # overwrite
                 furniture_dict[furniture["uid"]] = furniture
+            elif model_super_category in unmatched_categories_count_dict_scene:
+                unmatched_categories_count_dict_scene[model_super_category] += 1
+            else:
+                unmatched_categories_count_dict_scene[model_super_category] = 1
+                
 
     room_count_scene = 0 # count of rooms in this scene with type == room_type and at least 1 furniture in furniture_dict
     for room in scene_json["scene"]["room"]:
         if room["type"] == room_type:
             furniture_list = []
+            furniture_info_list = []
             for child in room["children"]: # parts of the room, includes layout and furniture
                 ref = child["ref"]
                 if ref in furniture_dict:
                     furniture = furniture_dict[ref]
+                    # ignore models that were not part of deepsdf training, as they do not have latent code
+                    if furniture['jid'] not in deepsdf_latent_codes:
+                        continue
+
                     pos = child["pos"]
                     dim = np.array(child["scale"]) * np.array(furniture["bbox"])
                     ori = quaternion_to_orientation(child["rot"])
                     cat = categories_dict[furniture["category"]]
+                    categories_count_dict_room[furniture["category"]] += 1
+                    shape_code = deepsdf_latent_codes[furniture["jid"]]
 
-                    f = np.zeros(6 + 1)
+                    f = np.zeros(6 + 1 + 512) # 4 geo, 2 ori, 1 cat, 512 shape
                     f[0:6] = [pos[0], pos[2], dim[0], dim[2], ori[0], ori[2]]
                     f[6] = cat
+                    f[7:] = shape_code
                     furniture_list.append(f)
+                    furniture_info_list.append({
+                        "id": furniture['jid'],
+                        "pos": [pos[0], pos[2]],
+                        "dim": [dim[0], dim[2]],
+                        "ori": [ori[0], ori[2]],
+                        "cat": cat
+                    })
             
             furniture_count_room = len(furniture_list)
             if furniture_count_room == 0:
@@ -184,8 +219,10 @@ for scene_filename in scene_filenames:
             furniture_arr[:, 0:2] -= pos_avg
 
             if SAVE:
-                room_filename = os.path.splitext(scene_filename)[0] + "_" + str(room_count_scene) + ".npy"
-                np.save(os.path.join(rooms_dir, room_filename), furniture_arr)
+                room_filename = os.path.splitext(scene_filename)[0] + "_" + str(room_count_scene)
+                np.save(os.path.join(rooms_dir, room_filename + ".npy"), furniture_arr)
+                with open(os.path.join(rooms_dir, room_filename + ".json"), "w") as f:
+                    json.dump(furniture_info_list, f)
 
     room_count += room_count_scene
 
@@ -193,8 +230,9 @@ info = [
     f"Total rooms: {room_count}\n",
     f"Average furniture count: {furniture_count/room_count}\n",
     f"Max furniture count: {max_furniture_count}\n",
-    f"Matched categories count: {json.dumps(categories_count_dict)}\n",
-    f"Unmatched categories count: {json.dumps(unmatched_categories_count_dict)}\n",
+    f"Matched categories scene count: {json.dumps(categories_count_dict_scene)}\n",
+    f"Unmatched categories scene count: {json.dumps(unmatched_categories_count_dict_scene)}\n",
+    f"Matched categories frequencies across rooms: {json.dumps(categories_count_dict_room)}\n",
 ]
 
 if SAVE:

@@ -40,7 +40,7 @@ def draw_generated_scene(generated_scene):
         ori = r[4:6]
         ori = clip_orientation(ori / np.linalg.norm(ori))
         cat = categories_reverse_dict[np.argmax(r[geometry_size+orientation_size:geometry_size+orientation_size+num_categories])]
-        existence = r[-1] > 0
+        existence = r[geometry_size+orientation_size+num_categories] > 0
 
         if HIDE_NONEXISTENT_OUTPUTS and not existence:
             continue

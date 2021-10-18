@@ -32,7 +32,7 @@ optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE_INITIAL, betas=(0.9,
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=STEP_SIZE, gamma=STEP_GAMMA)
 model = model.train().cuda()
 
-scene_dataset = SceneDataset(rooms_dir, max_num_points)
+scene_dataset = SceneDataset(rooms_dir, max_num_points, load_ram=True)
 
 def collate_fn(batch):
     return default_collate([t[0] for t in batch]), [t[1] for t in batch]
@@ -51,9 +51,10 @@ geometric_loss_log = []
 orientation_loss_log = []
 categorical_loss_log = []
 existence_loss_log = []
+shape_loss_log = []
 
 for epoch in range(NUM_EPOCHS):
-    epoch_losses = [0, 0, 0, 0] # geometric, orientation, categorical, existence
+    epoch_losses = [0, 0, 0, 0, 0] # geometric, orientation, categorical, existence, shape
 
     for i, scene_data in enumerate(scene_loader):
         scenes, targets = scene_data
@@ -63,11 +64,12 @@ for epoch in range(NUM_EPOCHS):
         scenes = scenes.cuda()
 
         # forward
-        reconstruction_batch, _, trans_feat = model(scenes)
+        reconstruction_batch, latent_code_batch, _, _ = model(scenes)
         
-        losses = [0, 0, 0, 0] # geometric, orientation, categorical, existence
+        losses = [0, 0, 0, 0, 0] # geometric, orientation, categorical, existence, shape
         for j in range(BATCH_SIZE):
             reconstruction = reconstruction_batch[j]
+            latent_code = latent_code_batch[j]
             target = targets[j].cuda()
 
             cost_mat_position = get_cost_matrix_2d(reconstruction[:, 0:2], target[:, 0:2])
@@ -81,15 +83,16 @@ for epoch in range(NUM_EPOCHS):
             target_existence = torch.zeros(max_num_points)
             target_existence[matched_ind] = 1
             target = target[target_ind] # reorder target
+            target_category_idx = target[:, geometry_size+orientation_size].long()
 
             # Geometry
             losses[0] += geometric_weight * geometric_loss(
                 reconstruction_matched[:, 0:geometry_size],
                 target[:, 0:geometry_size]
             )
-            if reconstruction_unmatched.shape[0] > 0:
+            if reconstruction_unmatched.shape[0] > 0: # regress dimension of unmatched to zero
                 losses[0] += geometric_weight * geometric_loss(
-                    reconstruction_unmatched[:, 2:4], # regress only dimension of unmatched
+                    reconstruction_unmatched[:, 2:4],
                     torch.zeros_like(reconstruction_unmatched[:, 2:4])
                 )
             # Orientation
@@ -100,12 +103,26 @@ for epoch in range(NUM_EPOCHS):
             # Category
             losses[2] += categorical_weight * categorical_loss(
                 reconstruction_matched[:, geometry_size+orientation_size:geometry_size+orientation_size+num_categories],
-                target[:, geometry_size+orientation_size].long()
+                target_category_idx
             )
             # Existence
             losses[3] += existence_weight * existence_loss(
                 reconstruction[:, geometry_size+orientation_size+num_categories],
                 target_existence.cuda()
+            )
+            # Shape
+            shape_codes = torch.zeros(target.shape[0], shape_size).cuda()
+            for k in range(target.shape[0]):
+                x = torch.cat(
+                    (
+                        latent_code,
+                        reconstruction_matched[k, 0:geometry_size+orientation_size]
+                    )
+                )
+                shape_codes[k, :] = model.decode_shape(x, target_category_idx[k])
+            losses[4] += shape_weight * shape_loss(
+                shape_codes,
+                target[:, geometry_size+orientation_size+1:]
             )
 
         loss = 0
@@ -119,16 +136,16 @@ for epoch in range(NUM_EPOCHS):
         loss.backward()
         optimizer.step()
 
-        print('[%d: %d] train loss: %f (%f, %f, %f, %f)' % (
-            epoch + 1, i + 1, loss.item(), losses[0].item(), losses[1].item(), losses[2].item(), losses[3].item()
+        print('[%d: %d] train loss: %f (%f, %f, %f, %f, %f)' % (
+            epoch + 1, i + 1, loss.item(), losses[0].item(), losses[1].item(), losses[2].item(), losses[3].item(), losses[4].item()
         ))
 
     epoch_loss = 0
     for li in range(len(epoch_losses)):
         epoch_loss += epoch_losses[li]
 
-    print('EPOCH %d train loss: %f (%f, %f, %f, %f)' % (
-        epoch + 1, epoch_loss, epoch_losses[0], epoch_losses[1], epoch_losses[2], epoch_losses[3]
+    print('EPOCH %d train loss: %f (%f, %f, %f, %f, %f)' % (
+        epoch + 1, epoch_loss, epoch_losses[0], epoch_losses[1], epoch_losses[2], epoch_losses[3], epoch_losses[4]
     ))
 
     loss_log.append(epoch_loss)
@@ -136,11 +153,12 @@ for epoch in range(NUM_EPOCHS):
     orientation_loss_log.append(epoch_losses[1])
     categorical_loss_log.append(epoch_losses[2])
     existence_loss_log.append(epoch_losses[3])
+    shape_loss_log.append(epoch_losses[4])
 
     scheduler.step()
 
     if (epoch + 1) % 100 == 0:
-        torch.save(model.state_dict(), '%s/%d.pth' % (SAVE_PATH, epoch))
+        torch.save(model.state_dict(), '%s/%d.pth' % (SAVE_PATH, epoch + 1))
 
 torch.save(
     {
@@ -149,6 +167,7 @@ torch.save(
         "orientation_loss": orientation_loss_log,
         "categorical_loss": categorical_loss_log,
         "existence_loss": existence_loss_log,
+        "shape_loss": shape_loss_log
     },
     os.path.join("experiments", model_name, "Logs.pth")
 )

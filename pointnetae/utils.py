@@ -52,6 +52,17 @@ def existence_loss(x_logits, target_existence):
     return F.binary_cross_entropy_with_logits(x_logits, target_existence)
 
 
+def shape_loss(x, target):
+    """
+    x: (N, shape_size)
+    target: (N, shape_size)
+    """
+    # print("SHAPE", x, target)
+    assert len(x.shape) == 2
+    assert x.shape == target.shape
+    return F.mse_loss(x, target)
+
+
 def get_assignment_problem_matchings(cost_matrix):
     """
     cost_matrix must have r rows and c cols (shape (r, c)), where r <= c
@@ -95,7 +106,7 @@ def generate_scene(batch_size, encoding=None):
 def table1(batch_size, encoding=None):
     """
     "a square table with 0-4 chairs"
-    [max_num_points, point_size + 1], [max_num_points, geometry_size + orientation_size + 1 + code_size]
+    [max_num_points, point_size + 1], [max_num_points, geometry_size + orientation_size + 1 + shape_size]
     (padded with zeros)
 
     encoding: None for random, 0-15 for nonrandom
@@ -146,7 +157,7 @@ def table1(batch_size, encoding=None):
 def table2(batch_size):
     """
     "a square table with 4 chairs of varying distance (gaussian) from the table"
-    [max_num_points, point_size + 1], [max_num_points, geometry_size + orientation_size + 1 + code_size]
+    [max_num_points, point_size + 1], [max_num_points, geometry_size + orientation_size + 1 + shape_size]
     (padded with zeros)
     """
     assert max_num_points >= 5

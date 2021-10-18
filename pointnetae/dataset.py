@@ -31,6 +31,7 @@ class SceneDataset(torch.utils.data.Dataset):
         furniture_tensor[0:num_points, 0:geometry_size + orientation_size] = furniture_arr[:, 0:geometry_size + orientation_size] # geometry, orientation
         furniture_tensor[np.arange(num_points), geometry_size + orientation_size + furniture_arr[:, geometry_size + orientation_size].astype(int)] = 1 # category
         furniture_tensor[0:num_points, geometry_size + orientation_size + num_categories] = 1 # existence
+        furniture_tensor[0:num_points, geometry_size + orientation_size + num_categories + 1:] = furniture_arr[:, geometry_size + orientation_size + 1:] # shape
 
         return torch.Tensor(furniture_tensor), torch.Tensor(target_tensor)
 

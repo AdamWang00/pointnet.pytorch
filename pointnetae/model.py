@@ -102,6 +102,20 @@ class PointNetEncoder(nn.Module):
             return torch.cat([x, pointfeat], 1), trans, trans_feat
 
 
+class ShapeCodeDecoder(nn.Module):
+    def __init__(self):
+        super(ShapeCodeDecoder, self).__init__()
+        self.fc1 = nn.Linear(latent_size + geometry_size + orientation_size, 512)
+        self.fc2 = nn.Linear(512, 512)
+        self.fc3 = nn.Linear(512, shape_size)
+    
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+
+
 class PointNetAE(nn.Module):
     def __init__(self, feature_transform=False):
         super(PointNetAE, self).__init__()
@@ -109,20 +123,27 @@ class PointNetAE(nn.Module):
         self.encoder = PointNetEncoder(global_feat=True, feature_transform=feature_transform)
         self.fc1 = nn.Linear(latent_size, 512)
         self.fc2 = nn.Linear(512, 256)
-        self.fc3 = nn.Linear(256, (point_size + 1) * max_num_points)
+        self.fc3 = nn.Linear(256, (point_size_intermediate + 1) * max_num_points)
         self.bn1 = nn.BatchNorm1d(512)
         self.bn2 = nn.BatchNorm1d(256)
         # self.dropout = nn.Dropout(p=0.3)
 
+        # use a decoder for each shape category
+        self.shape_decoders = nn.ModuleList([ShapeCodeDecoder() for _ in range(num_categories)])
+
     def forward(self, x): # x: [batch_size, point_size + 1, num_points]
-        x, trans, trans_feat = self.encoder(x)
-        x = F.relu(self.bn1(self.fc1(x)))
+        latent_code, trans, trans_feat = self.encoder(x)
+        x = F.relu(self.bn1(self.fc1(latent_code)))
         x = F.relu(self.bn2(self.fc2(x)))
         x = self.fc3(x)
 
-        x = x.view(-1, max_num_points, point_size + 1)
+        x = x.view(-1, max_num_points, point_size_intermediate + 1)
 
-        return x, trans, trans_feat
+        return x, latent_code, trans, trans_feat
+    
+    def decode_shape(self, x, category_idx): # x: [batch_size=1, latent_size + geometry_size + orientation_size], category_idx: idx in range(0, num_categories)
+        shape_decoder = self.shape_decoders[category_idx]
+        return shape_decoder(x)
     
     def generate(self, latent_code=None): # note this does not make use of encoder
         if latent_code is None:
@@ -189,44 +210,44 @@ class PointNetAE(nn.Module):
 #         return x, trans, trans_feat
 
 
-def feature_transform_regularizer(trans):
-    d = trans.size()[1]
-    I = torch.eye(d)[None, :, :]
-    if trans.is_cuda:
-        I = I.cuda()
-    loss = torch.mean(torch.norm(torch.bmm(trans, trans.transpose(2,1)) - I, dim=(1,2)))
-    return loss
+# def feature_transform_regularizer(trans):
+#     d = trans.size()[1]
+#     I = torch.eye(d)[None, :, :]
+#     if trans.is_cuda:
+#         I = I.cuda()
+#     loss = torch.mean(torch.norm(torch.bmm(trans, trans.transpose(2,1)) - I, dim=(1,2)))
+#     return loss
 
 
-if __name__ == '__main__':
-    sim_data = Variable(torch.rand(32,point_size + 1,2500))
-    # trans = STN3d()
-    # out = trans(sim_data)
-    # print('stn', out.size())
-    # print('loss', feature_transform_regularizer(out))
+# if __name__ == '__main__':
+#     sim_data = Variable(torch.rand(32,point_size + 1,2500))
+#     # trans = STN3d()
+#     # out = trans(sim_data)
+#     # print('stn', out.size())
+#     # print('loss', feature_transform_regularizer(out))
 
-    sim_data_64d = Variable(torch.rand(32, 64, 2500))
-    trans = STNkd(k=64)
-    out = trans(sim_data_64d)
-    print('stn64d', out.size())
-    print('loss', feature_transform_regularizer(out))
+#     sim_data_64d = Variable(torch.rand(32, 64, 2500))
+#     trans = STNkd(k=64)
+#     out = trans(sim_data_64d)
+#     print('stn64d', out.size())
+#     print('loss', feature_transform_regularizer(out))
 
-    point_encoder = PointNetEncoder()
-    out, _, _, _, _ = point_encoder(sim_data)
-    print('global feat', out.size())
+#     point_encoder = PointNetEncoder()
+#     out, _, _, _, _ = point_encoder(sim_data)
+#     print('global feat', out.size())
 
-    point_vae = PointNetAE()
-    out, _, _, _, _ = point_vae(sim_data)
-    print('VAE', out.size())
+#     point_vae = PointNetAE()
+#     out, _, _, _, _ = point_vae(sim_data)
+#     print('VAE', out.size())
 
-    # pointfeat = PointNetEncoder(global_feat=False)
-    # out, _, _ = pointfeat(sim_data)
-    # print('point feat', out.size())
+#     # pointfeat = PointNetEncoder(global_feat=False)
+#     # out, _, _ = pointfeat(sim_data)
+#     # print('point feat', out.size())
 
-    # cls = PointNetCls(k = 5)
-    # out, _, _ = cls(sim_data)
-    # print('class', out.size())
+#     # cls = PointNetCls(k = 5)
+#     # out, _, _ = cls(sim_data)
+#     # print('class', out.size())
 
-    # seg = PointNetDenseCls(k = 3)
-    # out, _, _ = seg(sim_data)
-    # print('seg', out.size())
+#     # seg = PointNetDenseCls(k = 3)
+#     # out, _, _ = seg(sim_data)
+#     # print('seg', out.size())

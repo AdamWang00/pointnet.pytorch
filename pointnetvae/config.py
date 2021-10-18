@@ -271,26 +271,26 @@ procedure_params_all = {
         "geometry_size": 2 + 2, # position and dimensions
         "orientation_size": 2,
         "num_categories": 2,
-        "code_size": 0,
+        "shape_size": 0,
     },
     "bedroom2": {
         "room_name": "Bedroom2",
         "geometry_size": 2 + 2, # position and dimensions
         "orientation_size": 2,
         "num_categories": 10,
-        "code_size": 0,
+        "shape_size": 0,
     },
     "table1": {
         "geometry_size": 2 + 2, # position and dimensions
         "orientation_size": 0,
         "num_categories": 2,
-        "code_size": 0,
+        "shape_size": 0,
     },
     "table2": {
         "geometry_size": 2 + 2, # position and dimensions
         "orientation_size": 0,
         "num_categories": 2,
-        "code_size": 0,
+        "shape_size": 0,
     }
 }
 
@@ -342,8 +342,8 @@ room_name = procedure_params["room_name"]
 geometry_size = procedure_params["geometry_size"]
 orientation_size = procedure_params["orientation_size"]
 num_categories = procedure_params["num_categories"]
-code_size = procedure_params["code_size"]
-point_size = geometry_size + orientation_size + num_categories + code_size
+shape_size = procedure_params["shape_size"]
+point_size = geometry_size + orientation_size + num_categories + shape_size
 
 geometric_weight = params["geometric_weight"]
 orientation_weight = params["orientation_weight"]

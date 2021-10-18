@@ -195,5 +195,5 @@ room_name = ae_procedure_params["room_name"]
 geometry_size = ae_procedure_params["geometry_size"]
 orientation_size = ae_procedure_params["orientation_size"]
 num_categories = ae_procedure_params["num_categories"]
-code_size = ae_procedure_params["code_size"]
-point_size = geometry_size + orientation_size + num_categories + code_size
+shape_size = ae_procedure_params["shape_size"]
+point_size = geometry_size + orientation_size + num_categories + shape_size

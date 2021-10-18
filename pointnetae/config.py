@@ -1,14 +1,15 @@
-model_name = "bedroom_full1"
+model_name = "bedroom_partial1"
 epoch_load = "latest"
 
 data_dir = "../data"
 rooms_subdir = "Rooms"
 
 model_params_subdir = "ModelParameters"
+model_reconstructions_subdir = "TrainingReconstructions"
 
 params_history = {
-    "bedroom_full1": {
-        "procedure": "bedroom2",
+    "bedroom_partial1": {
+        "procedure": "bedroom3",
         "num_epochs": 800,
         "batch_size": 64,
         "learning_rate": 0.001,
@@ -20,48 +21,61 @@ params_history = {
         "orientation_weight": 1,
         "categorical_weight": 1,
         "existence_weight": 1,
+        "shape_weight": 1,
+        "dimensions_matching_weight": 0.5
+    },
+    "bedroom_partial2": {
+        "procedure": "bedroom3",
+        "num_epochs": 1000,
+        "batch_size": 64,
+        "learning_rate": 0.001,
+        "step_size": 200,
+        "step_gamma": 0.5,
+        "latent_size": 256,
+        "max_num_points": 5,
+        "geometric_weight": 1,
+        "orientation_weight": 1,
+        "categorical_weight": 1,
+        "existence_weight": 1,
+        "shape_weight": 1,
         "dimensions_matching_weight": 0.5
     },
 }
 
 procedure_params_all = {
-    "bedroom2": {
-        "room_name": "Bedroom2",
+    "bedroom3": {
+        "room_name": "Bedroom3",
         "geometry_size": 2 + 2, # position and dimensions
         "orientation_size": 2,
-        "num_categories": 10,
-        "code_size": 0,
+        "num_categories": 2,
+        "shape_size": 512,
     },
 }
 
 colors = {
-    "Bed": "blue",
-    "Cabinet/Shelf/Desk": "grey",
-    "Chair": "red",
-    "Pier/Stool": "red",
-    "Sofa": "yellow",
-    "Table": "green",
-    "Nightstand": "orange",
-    "TV Stand": "green",
-    "Coffee Table": "green",
-    "Wardrobe": "purple",
-    # "Pendant Lamp": "yellow",
-    # "Ceiling Lamp": "yellow",
+    "bed": "blue",
+    "cabinet": "grey",
+    "chair": "red",
+    "smallStool": "red",
+    "largeSofa": "yellow",
+    "largeTable": "brown",
+    "nightstand": "orange",
+    "tvStand": "green",
+    "smallTable": "purple",
+    # "lighting": "yellow",
 }
 
 colors_light = {
     "Bed": "#ADD8EE",
+    "Cabinet": "#D3D3D3",
     "Nightstand": "#FFB580",
-    "Cabinet/Shelf/Desk": "#D3D3D3",
     "Chair": "#FF7F7F",
     "Pier/Stool": "#FF7F7F",
-    "Sofa": "#FFFF99",
-    "Table": "#B0EEB0",
-    "TV Stand": "#B0EEB0",
-    "Coffee Table": "#B0EEB0",
-    "Wardrobe": "#b19cd9",
-    # "Pendant Lamp": "#FFFF99",
-    # "Ceiling Lamp": "#FFFF99",
+    "largeSofa": "#FFFF99",
+    "largeTable": "#C89D7C",
+    "tvStand": "#B0EEB0",
+    "smallTable": "#b19cd9",
+    # "lighting": "#FFFF99",
 }
 
 params = params_history[model_name]
@@ -82,12 +96,15 @@ room_name = procedure_params["room_name"]
 geometry_size = procedure_params["geometry_size"]
 orientation_size = procedure_params["orientation_size"]
 num_categories = procedure_params["num_categories"]
-code_size = procedure_params["code_size"]
-point_size = geometry_size + orientation_size + num_categories + code_size
+shape_size = procedure_params["shape_size"]
+
+point_size_intermediate = geometry_size + orientation_size + num_categories
+point_size = point_size_intermediate + shape_size
 
 geometric_weight = params["geometric_weight"]
 orientation_weight = params["orientation_weight"]
 categorical_weight = params["categorical_weight"]
 existence_weight = params["existence_weight"]
+shape_weight = params["shape_weight"]
 
 dimensions_matching_weight = params["dimensions_matching_weight"]

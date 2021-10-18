@@ -105,7 +105,7 @@ def generate_scene(batch_size, encoding=None):
 def table1(batch_size, encoding=None):
     """
     "a square table with 0-4 chairs"
-    [max_num_points, point_size + 1], [max_num_points, geometry_size + orientation_size + 1 + code_size]
+    [max_num_points, point_size + 1], [max_num_points, geometry_size + orientation_size + 1 + shape_size]
     (padded with zeros)
 
     encoding: None for random, 0-15 for nonrandom
@@ -156,7 +156,7 @@ def table1(batch_size, encoding=None):
 def table2(batch_size):
     """
     "a square table with 4 chairs of varying distance (gaussian) from the table"
-    [max_num_points, point_size + 1], [max_num_points, geometry_size + orientation_size + 1 + code_size]
+    [max_num_points, point_size + 1], [max_num_points, geometry_size + orientation_size + 1 + shape_size]
     (padded with zeros)
     """
     assert max_num_points >= 5

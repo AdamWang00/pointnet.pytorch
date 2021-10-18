@@ -73,6 +73,9 @@ if EVALUATE_VAE:
     fake_latent_codes = torch.randn(NUM_FAKE_CODES, latent_size)
     print(calculate_frechet(real_latent_codes.numpy(), fake_latent_codes.numpy()))
 else:
+
+    # TODO: normalize fake_generated_scenes such that it resembles the input to model_ae_reference.encoder (e.g. replace boxes with existence < 0 with zeros, make category one-hot, normalize and clip orientation; see generate.py)
+
     gan_load_path = os.path.join("experiments", model_name, model_params_subdir)
     model_gan = WGAN_GP()
     if not iter_load.isdigit():

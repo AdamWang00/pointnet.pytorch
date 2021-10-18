@@ -144,7 +144,7 @@ for epoch in range(NUM_EPOCHS):
     scheduler.step()
 
     if (epoch + 1) % 100 == 0:
-        torch.save(model.state_dict(), '%s/%d.pth' % (SAVE_PATH, epoch))
+        torch.save(model.state_dict(), '%s/%d.pth' % (SAVE_PATH, epoch + 1))
 
 torch.save(
     {
