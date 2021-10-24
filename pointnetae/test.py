@@ -1,7 +1,7 @@
 import os
 import torch
 import numpy as np
-import pickle
+import json
 from PIL import Image, ImageDraw, ImageFont
 from pointnetae.model import PointNetAE
 from pointnetae.config import *
@@ -22,8 +22,8 @@ font = ImageFont.truetype('/home/awang/Roboto-Regular.ttf', 12)
 base_dir = os.path.join(data_dir, room_name)
 rooms_dir = os.path.join(base_dir, rooms_subdir)
 
-with open(os.path.join(base_dir, "categories.pkl"), "rb") as f:
-    categories_reverse_dict = pickle.load(f)
+with open(os.path.join(base_dir, "categories.json"), "r") as f:
+    categories_reverse_dict = json.load(f)
 
 scene_dataset = SceneDataset(rooms_dir, max_num_points)
 
@@ -104,7 +104,7 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_TESTS):
         dim = t[2:4]
         ori = t[4:6]
         ori = clip_orientation(ori / np.linalg.norm(ori))
-        cat = categories_reverse_dict[t[6]]
+        cat = categories_reverse_dict[str(t[6])]
 
         if (ori[1] == 0): # Need to flip dimensions if oriented towards East/West
             dim[0], dim[1] = dim[1], dim[0]
@@ -132,7 +132,7 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_TESTS):
         dim = r[2:4]
         ori = r[4:6]
         ori = clip_orientation(ori / np.linalg.norm(ori))
-        cat = categories_reverse_dict[np.argmax(r[geometry_size+orientation_size:geometry_size+orientation_size+num_categories])]
+        cat = categories_reverse_dict[str(np.argmax(r[geometry_size+orientation_size:geometry_size+orientation_size+num_categories]))]
         existence = r[geometry_size+orientation_size+num_categories] > 0
 
         if HIDE_NONEXISTENT_OUTPUTS and not existence:

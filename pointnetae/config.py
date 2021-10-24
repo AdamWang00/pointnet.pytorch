@@ -1,15 +1,32 @@
-model_name = "bedroom_partial1"
+model_name = "bedroom_partial00"
 epoch_load = "latest"
 
 data_dir = "../data"
 rooms_subdir = "Rooms"
+roominfos_subdir = "RoomInfos"
 
 model_params_subdir = "ModelParameters"
 model_reconstructions_subdir = "TrainingReconstructions"
 
 params_history = {
-    "bedroom_partial1": {
-        "procedure": "bedroom3",
+    "bedroom_partial0": {
+        "procedure": "bedroom2",
+        "num_epochs": 1000,
+        "batch_size": 64,
+        "learning_rate": 0.001,
+        "step_size": 200,
+        "step_gamma": 0.5,
+        "latent_size": 256,
+        "max_num_points": 5,
+        "geometric_weight": 1,
+        "orientation_weight": 1,
+        "categorical_weight": 1,
+        "existence_weight": 1,
+        "shape_weight": 1,
+        "dimensions_matching_weight": 0.5
+    },
+    "bedroom_partial00": {
+        "procedure": "bedroom2",
         "num_epochs": 800,
         "batch_size": 64,
         "learning_rate": 0.001,
@@ -24,7 +41,7 @@ params_history = {
         "shape_weight": 1,
         "dimensions_matching_weight": 0.5
     },
-    "bedroom_partial2": {
+    "bedroom_partial1": {
         "procedure": "bedroom3",
         "num_epochs": 1000,
         "batch_size": 64,
@@ -43,6 +60,13 @@ params_history = {
 }
 
 procedure_params_all = {
+    "bedroom2": {
+        "room_name": "Bedroom2",
+        "geometry_size": 2 + 2, # position and dimensions
+        "orientation_size": 2,
+        "num_categories": 2,
+        "shape_size": 512,
+    },
     "bedroom3": {
         "room_name": "Bedroom3",
         "geometry_size": 2 + 2, # position and dimensions

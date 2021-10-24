@@ -44,3 +44,6 @@ class SceneDataset(torch.utils.data.Dataset):
         else:
             filepath = os.path.join(self.data_source, self.npyfiles[idx])
             return self.get_item_from_filepath(filepath)
+
+    def get_room_id(self, idx):
+        return os.path.splitext(self.npyfiles[idx])[0]

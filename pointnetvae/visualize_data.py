@@ -1,6 +1,6 @@
 import os
 import numpy as np
-import pickle
+import json
 from PIL import Image, ImageDraw, ImageFont
 from pointnetvae.config import *
 from pointnetvae.utils import clip_orientation
@@ -13,8 +13,8 @@ DATASET_OFFSET = 80
 base_dir = os.path.join(data_dir, room_name)
 rooms_dir = os.path.join(base_dir, rooms_subdir)
 
-with open(os.path.join(base_dir, "categories.pkl"), "rb") as f:
-    categories_reverse_dict = pickle.load(f)
+with open(os.path.join(base_dir, "categories.json"), "r") as f:
+    categories_reverse_dict = json.load(f)
 
 c = 0
 for room_filename in os.listdir(rooms_dir):
@@ -45,7 +45,7 @@ for room_filename in os.listdir(rooms_dir):
         dim = furniture[2:4]
         ori = furniture[4:6]
         ori = clip_orientation(ori / np.linalg.norm(ori))
-        cat = categories_reverse_dict[furniture[6]]
+        cat = categories_reverse_dict[str(furniture[6])]
 
         if (ori[1] == 0): # Need to flip dimensions if oriented towards East/West
             dim[0], dim[1] = dim[1], dim[0]

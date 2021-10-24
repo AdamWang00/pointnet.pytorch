@@ -3,7 +3,6 @@ sys.path.insert(0, "/home/awang156/DeepSDF")
 import numpy as np
 import torch
 import os
-import pickle
 import json
 from pointnetae.model import PointNetAE
 from pointnetae.config import *
@@ -14,12 +13,13 @@ import deep_sdf
 from networks.deep_sdf_decoder_color import Decoder
 from deep_sdf.mesh_color import create_mesh
 
+# ========== BEGIN PARAMS ==========
+
 LOAD_PATH = os.path.join("experiments", model_name, model_params_subdir, epoch_load + ".pth")
 NUM_RECONSTRUCTIONS = 1
 DATASET_OFFSET = 0
 
-deepsdf_experiments_dir = "../../DeepSDF"
-deepsdf_experiments_dir = os.path.join(deepsdf_experiments_dir, "experiments")
+# THESE MUST REFERENCE THE MODELS WHOSE LATENT CODES ARE USED DURING PREPROCESSING
 deepsdf_model_spec_subpaths = {
     "bed": "bed1/specs.json",
     "nightstand": "nightstand1/specs.json"
@@ -29,15 +29,20 @@ deepsdf_model_param_subpaths = {
     "nightstand": "nightstand1/ModelParameters/1000.pth"
 }
 
+deepsdf_experiments_dir = "../../DeepSDF"
+deepsdf_experiments_dir = os.path.join(deepsdf_experiments_dir, "experiments")
+
+# ========== END PARAMS ==========
+
 base_dir = os.path.join(data_dir, room_name)
 rooms_dir = os.path.join(base_dir, rooms_subdir)
 
-with open(os.path.join(base_dir, "categories.pkl"), "rb") as f:
-    categories_reverse_dict = pickle.load(f)
+with open(os.path.join(base_dir, "categories.json"), "r") as f:
+    categories_reverse_dict = json.load(f)
 
 decoders = []
 for idx in range(len(categories_reverse_dict)):
-    category = categories_reverse_dict[idx]
+    category = categories_reverse_dict[str(idx)]
     specs_filename = os.path.join(deepsdf_experiments_dir, deepsdf_model_spec_subpaths[category])
     specs = json.load(open(specs_filename))
     latent_size = specs["CodeLength"]
@@ -90,13 +95,13 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
         ori = r[4:6]
         ori = clip_orientation(ori / np.linalg.norm(ori))
         cat_idx = np.argmax(r[geometry_size+orientation_size:geometry_size+orientation_size+num_categories])
-        cat = categories_reverse_dict[cat_idx]
+        cat = categories_reverse_dict[str(cat_idx)]
         existence = r[geometry_size+orientation_size+num_categories] > 0
 
         if not existence:
             continue
 
-        print(f"Reconstructing room #{i} furniture #{len(furniture_info_list) + 1} (category {cat})")
+        print(f"Reconstructing room #{i} furniture #{len(furniture_info_list)} (category {cat})")
 
         mesh_filepath = os.path.join(reconstructions_dir, str(i), "mesh_" + str(len(furniture_info_list)))
 
@@ -117,6 +122,7 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
                 max_batch=int(2 ** 17),
             )
 
+        # THIS IS DONE IN visualize_reconstruction.py
         # if (ori[1] == 0): # Need to flip dimensions if oriented towards East/West
         #     dim[0], dim[1] = dim[1], dim[0]
 

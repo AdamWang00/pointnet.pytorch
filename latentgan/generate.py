@@ -1,6 +1,6 @@
 import os
 import torch
-import pickle
+import json
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from latentgan.config import *
@@ -15,8 +15,8 @@ NUM_GENERATIONS = 16
 HIDE_NONEXISTENT_OUTPUTS = True
 
 base_dir = os.path.join(data_dir, room_name)
-with open(os.path.join(base_dir, "categories.pkl"), "rb") as f:
-    categories_reverse_dict = pickle.load(f)
+with open(os.path.join(base_dir, "categories.json"), "r") as f:
+    categories_reverse_dict = json.load(f)
 
 font = ImageFont.truetype('/home/awang/Roboto-Regular.ttf', 12)
 
@@ -39,7 +39,7 @@ def draw_generated_scene(generated_scene):
         dim = r[2:4]
         ori = r[4:6]
         ori = clip_orientation(ori / np.linalg.norm(ori))
-        cat = categories_reverse_dict[np.argmax(r[geometry_size+orientation_size:geometry_size+orientation_size+num_categories])]
+        cat = categories_reverse_dict[str(np.argmax(r[geometry_size+orientation_size:geometry_size+orientation_size+num_categories]))]
         existence = r[geometry_size+orientation_size+num_categories] > 0
 
         if HIDE_NONEXISTENT_OUTPUTS and not existence:

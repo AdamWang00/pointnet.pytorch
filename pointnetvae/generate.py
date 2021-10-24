@@ -1,6 +1,6 @@
 import os
 import torch
-import pickle
+import json
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from pointnetvae.model import PointNetVAE
@@ -20,8 +20,8 @@ font = ImageFont.truetype('/home/awang/Roboto-Regular.ttf', 12)
 base_dir = os.path.join(data_dir, room_name)
 rooms_dir = os.path.join(base_dir, rooms_subdir)
 
-with open(os.path.join(base_dir, "categories.pkl"), "rb") as f:
-    categories_reverse_dict = pickle.load(f)
+with open(os.path.join(base_dir, "categories.json"), "r") as f:
+    categories_reverse_dict = json.load(f)
 
 for _ in range(NUM_GENERATIONS):
     generated_scene = model.generate()
@@ -44,7 +44,7 @@ for _ in range(NUM_GENERATIONS):
         dim = r[2:4]
         ori = r[4:6]
         ori = clip_orientation(ori / np.linalg.norm(ori))
-        cat = categories_reverse_dict[np.argmax(r[geometry_size+orientation_size:geometry_size+orientation_size+num_categories])]
+        cat = categories_reverse_dict[str(np.argmax(r[geometry_size+orientation_size:geometry_size+orientation_size+num_categories]))]
         existence = r[geometry_size+orientation_size+num_categories] > 0
 
         if HIDE_NONEXISTENT_OUTPUTS and not existence:

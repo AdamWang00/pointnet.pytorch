@@ -3,6 +3,7 @@ epoch_load = "latest"
 
 data_dir = "../data"
 rooms_subdir = "Rooms"
+roominfos_subdir = "RoomInfos"
 
 model_params_subdir = "ModelParameters"
 

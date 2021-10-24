@@ -1,9 +1,8 @@
 import os
 import json
 import numpy as np
-import pickle
 import torch
-from pointnetvae.config import data_dir, rooms_subdir    
+from pointnetvae.config import data_dir, rooms_subdir, roominfos_subdir
 
 
 def vector_dot_matrix3(v, mat):
@@ -71,24 +70,28 @@ def quaternion_to_orientation(qua, axis = np.array([0, 0, 1])):
     rotMatrix = quaternion_to_matrix(qua)
     return clip_orientation(vector_dot_matrix3(axis, rotMatrix))
 
+# ========== BEGIN PARAMS ==========
 
 SAVE = True
 
 room_type = "Bedroom" # name of room in 3D-FRONT
-room_name = "Bedroom3" # name of subdirectory to save to
+room_name = "Bedroom2" # name of subdirectory to save to
 
 super_categories = {'bed', 'nightstand'}
-
-scenes_dir = "../../data/3D-FRONT"
-model_info_filepath = "../../data/model_info.json"
-
-model_category_to_super_category = {'armchair': 'chair', 'Lounge Chair / Cafe Chair / Office Chair': 'chair', 'Pendant Lamp': 'lighting', 'Coffee Table': 'largeTable', 'Corner/Side Table': 'smallTable', 'Dining Table': 'largeTable', 'King-size Bed': 'bed', 'Nightstand': 'nightstand', 'Bookcase / jewelry Armoire': 'cabinet', 'Three-Seat / Multi-set sofa': 'largeSofa', 'TV Stand': 'tvStand', 'Drawer Chest / Corner cabinet': 'cabinet', 'Wardrobe': 'cabinet', 'Footstool / Sofastool / Bed End Stool / Stool': 'smallStool', 'Sideboard / Side Cabinet / Console': 'cabinet', 'Ceiling Lamp': 'lighting', 'Children Cabinet': 'cabinet', 'Bed Frame': 'bed', 'Round End Table': 'smallTable', 'Desk': 'largeTable', 'Single bed': 'bed', 'Loveseat Sofa': 'largeSofa', 'Dining Chair': 'chair', 'Barstool': 'chair', 'Lazy Sofa': 'chair', 'L-shaped Sofa': 'largeSofa', 'Wine Cooler': 'cabinet', 'Dressing Table': 'largeTable', 'Dressing Chair': 'chair', 'Kids Bed': 'bed', 'Classic Chinese Chair': 'chair', 'Bunk Bed': 'bed', 'Chaise Longue Sofa': 'largeSofa', 'Shelf': 'cabinet', '衣帽架': 'other', '脚凳/墩': 'other', '博古架': 'other', '置物架': 'other', '装饰架': 'other'}
 
 deepsdf_experiments_dir = "../../DeepSDF/experiments"
 deepsdf_latent_code_subpaths = {
     "bed": "bed1/LatentCodes/1000.pth",
     "nightstand": "nightstand1/LatentCodes/1000.pth"
 }
+
+scenes_dir = "../../data/3D-FRONT"
+model_info_filepath = "../../data/model_info.json"
+
+model_category_to_super_category = {'armchair': 'chair', 'Lounge Chair / Cafe Chair / Office Chair': 'chair', 'Pendant Lamp': 'lighting', 'Coffee Table': 'largeTable', 'Corner/Side Table': 'smallTable', 'Dining Table': 'largeTable', 'King-size Bed': 'bed', 'Nightstand': 'nightstand', 'Bookcase / jewelry Armoire': 'cabinet', 'Three-Seat / Multi-set sofa': 'largeSofa', 'TV Stand': 'tvStand', 'Drawer Chest / Corner cabinet': 'cabinet', 'Wardrobe': 'cabinet', 'Footstool / Sofastool / Bed End Stool / Stool': 'smallStool', 'Sideboard / Side Cabinet / Console': 'cabinet', 'Ceiling Lamp': 'lighting', 'Children Cabinet': 'cabinet', 'Bed Frame': 'bed', 'Round End Table': 'smallTable', 'Desk': 'largeTable', 'Single bed': 'bed', 'Loveseat Sofa': 'largeSofa', 'Dining Chair': 'chair', 'Barstool': 'chair', 'Lazy Sofa': 'chair', 'L-shaped Sofa': 'largeSofa', 'Wine Cooler': 'cabinet', 'Dressing Table': 'largeTable', 'Dressing Chair': 'chair', 'Kids Bed': 'bed', 'Classic Chinese Chair': 'chair', 'Bunk Bed': 'bed', 'Chaise Longue Sofa': 'largeSofa', 'Shelf': 'cabinet', '衣帽架': 'other', '脚凳/墩': 'other', '博古架': 'other', '置物架': 'other', '装饰架': 'other'}
+
+# ========== END PARAMS ==========
+
 deepsdf_latent_codes = {} # model_id -> np.array
 for super_category in super_categories:
     deepsdf_split_path = os.path.join(deepsdf_experiments_dir, "splits", super_category + ".json")
@@ -112,6 +115,9 @@ if SAVE:
     rooms_dir = os.path.join(base_dir, rooms_subdir)
     if not os.path.isdir(rooms_dir):
         os.makedirs(rooms_dir)
+    roominfos_dir = os.path.join(base_dir, roominfos_subdir)
+    if not os.path.isdir(roominfos_dir):
+        os.makedirs(roominfos_dir)
 
 categories_dict = {}
 categories_reverse_dict = {}
@@ -127,8 +133,8 @@ for idx, category in enumerate(super_categories):
     num_categories += 1
 
 if SAVE:
-    with open(os.path.join(base_dir, "categories.pkl"), "wb") as f:
-        pickle.dump(categories_reverse_dict, f, pickle.HIGHEST_PROTOCOL)
+    with open(os.path.join(base_dir, "categories.json"), "w") as f:
+        json.dump(categories_reverse_dict, f)
 
 with open(model_info_filepath, "r") as f:
     model_info_json = json.load(f)
@@ -176,7 +182,7 @@ for scene_filename in scene_filenames:
     for room in scene_json["scene"]["room"]:
         if room["type"] == room_type:
             furniture_list = []
-            furniture_info_list = []
+            model_id_list = []
             for child in room["children"]: # parts of the room, includes layout and furniture
                 ref = child["ref"]
                 if ref in furniture_dict:
@@ -197,13 +203,7 @@ for scene_filename in scene_filenames:
                     f[6] = cat
                     f[7:] = shape_code
                     furniture_list.append(f)
-                    furniture_info_list.append({
-                        "id": furniture['jid'],
-                        "pos": [pos[0], pos[2]],
-                        "dim": [dim[0], dim[2]],
-                        "ori": [ori[0], ori[2]],
-                        "cat": cat
-                    })
+                    model_id_list.append(furniture['jid'])
             
             furniture_count_room = len(furniture_list)
             if furniture_count_room == 0:
@@ -218,10 +218,22 @@ for scene_filename in scene_filenames:
             pos_avg = np.average(furniture_arr[:, 0:2], axis=0)
             furniture_arr[:, 0:2] -= pos_avg
 
+            furniture_list = furniture_arr.tolist() # use to create furniture_info_list
+            furniture_info_list = []
+            for i in range(len(model_id_list)):
+                f = furniture_list[i]
+                furniture_info_list.append({
+                    "id": model_id_list[i],
+                    "pos": [f[0], f[1]],
+                    "dim": [f[2], f[3]],
+                    "ori": [f[4], f[5]],
+                    "cat": int(f[6])
+                })
+            
             if SAVE:
                 room_filename = os.path.splitext(scene_filename)[0] + "_" + str(room_count_scene)
                 np.save(os.path.join(rooms_dir, room_filename + ".npy"), furniture_arr)
-                with open(os.path.join(rooms_dir, room_filename + ".json"), "w") as f:
+                with open(os.path.join(roominfos_dir, room_filename + ".json"), "w") as f:
                     json.dump(furniture_info_list, f)
 
     room_count += room_count_scene
