@@ -6,10 +6,9 @@ from PIL import Image, ImageDraw, ImageFont
 from latentgan.config import *
 from latentgan.model import WGAN_GP
 if ae_model_class == "pointnetvae":
-    from pointnetvae.model import PointNetVAE
+    from latentgan.model import PointNetVAE
 elif ae_model_class == "pointnetae":
-    from pointnetae.model import PointNetAE
-from pointnetvae.utils import clip_orientation
+    from latentgan.model import PointNetAE
 
 NUM_GENERATIONS = 16
 HIDE_NONEXISTENT_OUTPUTS = True
@@ -19,6 +18,28 @@ with open(os.path.join(base_dir, "categories.json"), "r") as f:
     categories_reverse_dict = json.load(f)
 
 font = ImageFont.truetype('/home/awang/Roboto-Regular.ttf', 12)
+
+def clip_orientation(d, threshold=0.0):
+    '''
+    clip to [+-1, +-1] if close enough
+    '''
+    major_orientations = [
+        np.array([0, 1]),
+        np.array([0, -1]),
+        np.array([1, 0]),
+        np.array([-1, 0]),
+    ]
+    max_index = -1
+    max_dot = 0
+    for idx, major_orientation in enumerate(major_orientations):
+        dot = np.dot(d, major_orientation)
+        if dot > max_dot:
+            max_dot = dot
+            max_index = idx
+    if max_dot > threshold:
+        return major_orientations[max_index]
+    else:
+        return d
 
 def draw_generated_scene(generated_scene):
     w, h = 500, 500

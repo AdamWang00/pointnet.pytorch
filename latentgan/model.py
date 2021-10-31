@@ -239,3 +239,121 @@ class WGAN_GP(object):
     #     grid = utils.make_grid(real_latent_codes, nrow=number_int )
     #     utils.save_image(grid, 'interpolated_images/interpolated_{}.png'.format(str(number).zfill(3)))
     #     print("Saved interpolated real_latent_codes.")
+
+class ShapeCodeEncoder(nn.Module):
+    def __init__(self, output_size):
+        super(ShapeCodeEncoder, self).__init__()
+        dims = [shape_size] + shape_code_encoder_hidden_dims
+        modules = []
+        for i in range(len(dims) - 1):
+            modules.append(nn.Linear(dims[i], dims[i + 1]))
+            modules.append(nn.ReLU(True))
+        modules.append(nn.Linear(dims[-1], output_size))
+        self.main_module = nn.Sequential(*modules)
+    
+    def forward(self, x):
+        return self.main_module(x)
+
+
+class PointNetEncoder(nn.Module):
+    def __init__(self):
+        super(PointNetEncoder, self).__init__()
+
+        # To add batch norm, add after FC but before relu
+
+        self.shape_code_encoder_output_size = shape_code_encoder_output_size
+        self.intermediate_size = point_size + 1 - shape_size + self.shape_code_encoder_output_size # temporarily use (point_size + 1) instead of (point_size) to include existence label, in order to zero-pad the input up to some max num_points
+
+        dims = [self.intermediate_size] + encoder_hidden_dims
+        modules = []
+        for i in range(len(dims) - 1):
+            modules.append(nn.Conv1d(dims[i], dims[i + 1], 1))
+            modules.append(nn.ReLU(True))
+        modules.append(nn.Conv1d(dims[-1], latent_size, 1))
+        self.main_module = nn.Sequential(*modules)
+        
+        # use an encoder for each shape category
+        self.shape_encoders = nn.ModuleList([ShapeCodeEncoder(self.shape_code_encoder_output_size) for _ in range(num_categories)])
+
+    def forward(self, x, cats): # x: [batch_size, point_size + 1, num_points], cats: [batch_size, num_points]
+        b_size, _, n_pts = x.size()
+
+        # to add batching (i.e. to keep x_intermediate consistently shaped), replace n_pts with max_num_points
+        x_intermediate = torch.zeros((b_size, self.intermediate_size, n_pts))
+        x_intermediate[:, 0:point_size + 1 - shape_size, :] = x[:, 0:point_size + 1 - shape_size, :]
+        for b in range(b_size): # for each batch (i.e. room)
+            for p in range(n_pts): # for each point in the batch (i.e. furniture)
+                shape_encoder = self.shape_encoders[cats[b, p]]
+                x_intermediate[b, -self.shape_code_encoder_output_size:, p] = shape_encoder(x[b, -shape_size:, p])
+        x = x_intermediate
+
+        x = self.main_module(x)
+        x, _ = torch.max(x, 2, keepdim=True)
+        x = x.view(-1, latent_size)
+
+        return x
+
+
+class ShapeCodeDecoder(nn.Module):
+    def __init__(self):
+        super(ShapeCodeDecoder, self).__init__()
+        dims = [latent_size + geometry_size + orientation_size] + shape_code_decoder_hidden_dims
+        modules = []
+        for i in range(len(dims) - 1):
+            modules.append(nn.Linear(dims[i], dims[i + 1]))
+            modules.append(nn.ReLU(True))
+        modules.append(nn.Linear(dims[-1], shape_size))
+        self.main_module = nn.Sequential(*modules)
+    
+    def forward(self, x):
+        return self.main_module(x)
+
+
+class PointNetAE(nn.Module):
+    def __init__(self, feature_transform=False):
+        super(PointNetAE, self).__init__()
+        self.feature_transform = feature_transform
+        self.encoder = PointNetEncoder()
+
+        # Decoder:
+        # To add batch norm, add after FC but before relu
+        dims = [latent_size] + decoder_hidden_dims
+        modules = []
+        for i in range(len(dims) - 1):
+            modules.append(nn.Linear(dims[i], dims[i + 1]))
+            modules.append(nn.ReLU(True))
+        modules.append(nn.Linear(dims[-1], (point_size_intermediate + 1) * max_num_points))
+        self.main_module = nn.Sequential(*modules)
+
+        # use a shape code decoder for each shape category
+        self.shape_decoders = nn.ModuleList([ShapeCodeDecoder() for _ in range(num_categories)])
+
+    def forward(self, x, cats): # x: [batch_size, point_size + 1, num_points], cats: [batch_size, num_points]
+        latent_code = self.encoder(x, cats)
+
+        x = self.main_module(latent_code)
+        x = x.view(-1, max_num_points, point_size_intermediate + 1)
+
+        return x, latent_code
+
+    def decode_shape(self, x, category_idx): # x: [batch_size=1, latent_size + geometry_size + orientation_size], category_idx: idx in range(0, num_categories)
+        shape_decoder = self.shape_decoders[category_idx]
+        return shape_decoder(x)
+    
+    def generate(self, latent_code=None): # note this does not make use of encoder
+        if latent_code is None:
+            x = torch.randn(1, latent_size)
+        else:
+            x = latent_code
+
+        x = self.main_module(x)
+
+        if latent_code.shape[0] == 1:
+            x = x.view(max_num_points, point_size_intermediate + 1)
+        else:
+            x = x.view(-1, max_num_points, point_size_intermediate + 1)
+        return x
+
+
+class PointNetVAE(nn.Module):
+    pass

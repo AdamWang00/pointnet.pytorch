@@ -27,10 +27,10 @@ class SceneDataset(torch.utils.data.Dataset):
         assert num_points <= self.max_num_points
 
         target_tensor = furniture_arr
-        furniture_tensor = np.zeros((self.max_num_points, point_size + 1))
+        furniture_tensor = np.zeros((num_points, point_size + 1))
         furniture_tensor[0:num_points, 0:geometry_size + orientation_size] = furniture_arr[:, 0:geometry_size + orientation_size] # geometry, orientation
         furniture_tensor[np.arange(num_points), geometry_size + orientation_size + furniture_arr[:, geometry_size + orientation_size].astype(int)] = 1 # category
-        furniture_tensor[0:num_points, geometry_size + orientation_size + num_categories] = 1 # existence
+        furniture_tensor[0:num_points, geometry_size + orientation_size + num_categories] = 1 # existence (TODO: remove this from everywhere)
         furniture_tensor[0:num_points, geometry_size + orientation_size + num_categories + 1:] = furniture_arr[:, geometry_size + orientation_size + 1:] # shape
 
         return torch.Tensor(furniture_tensor), torch.Tensor(target_tensor)

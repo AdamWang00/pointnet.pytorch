@@ -2,11 +2,12 @@ import torch
 import torch.optim as optim
 import torch.utils.data as data_utils
 import os
-from torch.utils.data.dataloader import default_collate
 from pointnetae.model import PointNetAE
 from pointnetae.config import *
 from pointnetae.utils import *
 from pointnetae.dataset import SceneDataset
+
+# from torch.utils.data.dataloader import default_collate # for batching input scenes
 
 
 NUM_EPOCHS = num_epochs
@@ -35,7 +36,8 @@ model = model.train().cuda()
 scene_dataset = SceneDataset(rooms_dir, max_num_points, load_ram=True)
 
 def collate_fn(batch):
-    return default_collate([t[0] for t in batch]), [t[1] for t in batch]
+    # return default_collate([t[0] for t in batch]), [t[1] for t in batch]
+    return [t[0] for t in batch], [t[1] for t in batch]
 
 scene_loader = data_utils.DataLoader(
     scene_dataset,
@@ -57,20 +59,20 @@ for epoch in range(NUM_EPOCHS):
     epoch_losses = [0, 0, 0, 0, 0] # geometric, orientation, categorical, existence, shape
 
     for i, scene_data in enumerate(scene_loader):
-        scenes, targets = scene_data
+        scenes, targets = scene_data # scenes and targets are both lists of 2D tensors
         optimizer.zero_grad()
-
-        scenes = scenes.transpose(2, 1)
-        scenes = scenes.cuda()
-
-        # forward
-        reconstruction_batch, latent_code_batch, _, _ = model(scenes)
         
         losses = [0, 0, 0, 0, 0] # geometric, orientation, categorical, existence, shape
         for j in range(BATCH_SIZE):
-            reconstruction = reconstruction_batch[j]
-            latent_code = latent_code_batch[j]
-            target = targets[j].cuda()
+            scene = scenes[j].transpose(1, 0).cuda() # need to transpose for Conv1d
+            target = targets[j]
+            cats = target[:, geometry_size + orientation_size].numpy().astype(int) # category indices
+            target = target.cuda()
+
+            # use single-element batches due to differently-shaped batch elements
+            reconstruction_batch, latent_code_batch = model(scene.unsqueeze(0), np.expand_dims(cats, 0))
+            reconstruction = reconstruction_batch[0]
+            latent_code = latent_code_batch[0]
 
             cost_mat_position = get_cost_matrix_2d(reconstruction[:, 0:2], target[:, 0:2])
             cost_mat_dimension = get_cost_matrix_2d(reconstruction[:, 2:4], target[:, 2:4])

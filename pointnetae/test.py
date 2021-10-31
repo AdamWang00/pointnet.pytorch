@@ -9,13 +9,13 @@ from pointnetae.utils import *
 from pointnetae.dataset import SceneDataset
 
 LOAD_PATH = os.path.join("experiments", model_name, model_params_subdir, epoch_load + ".pth")
-NUM_TESTS = 1
+NUM_TESTS = 8
 DATASET_OFFSET = 0
 HIDE_NONEXISTENT_OUTPUTS = True
 
 model = PointNetAE()
 model.load_state_dict(torch.load(LOAD_PATH))
-model = model.eval()
+model = model.eval().cuda()
 
 font = ImageFont.truetype('/home/awang/Roboto-Regular.ttf', 12)
 
@@ -29,10 +29,11 @@ scene_dataset = SceneDataset(rooms_dir, max_num_points)
 
 for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_TESTS):
     scene, target = scene_dataset.__getitem__(i)
-    scene = scene.unsqueeze(0)
+    scene = scene.transpose(1, 0).cuda()
+    cats = target[:, geometry_size + orientation_size].numpy().astype(int)
 
-    reconstruction, _, _, _ = model(scene.transpose(2, 1))
-    reconstruction = reconstruction[0]
+    reconstruction, latent_code = model(scene.unsqueeze(0), np.expand_dims(cats, 0))
+    reconstruction = reconstruction[0].detach().cpu()
 
     cost_mat_position = get_cost_matrix_2d(reconstruction[:, 0:2], target[:, 0:2])
     cost_mat_dimension = get_cost_matrix_2d(reconstruction[:, 2:4], target[:, 2:4])
@@ -46,44 +47,44 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_TESTS):
     target_existence[matched_ind] = 1
     target = target[target_ind]
 
-    print("===== WEIGHTED LOSSES =====")
+    # print("===== WEIGHTED LOSSES =====")
 
-    print("geometry loss:", geometric_weight * geometric_loss(
-        reconstruction_matched[:, 0:geometry_size],
-        target[:, 0:geometry_size]
-    ).item())
+    # print("geometry loss:", geometric_weight * geometric_loss(
+    #     reconstruction_matched[:, 0:geometry_size],
+    #     target[:, 0:geometry_size]
+    # ).item())
 
-    print("orientation loss:", orientation_weight * orientation_loss(
-        reconstruction_matched[:, geometry_size:geometry_size+orientation_size],
-        target[:, geometry_size:geometry_size+orientation_size]
-    ).item())
+    # print("orientation loss:", orientation_weight * orientation_loss(
+    #     reconstruction_matched[:, geometry_size:geometry_size+orientation_size],
+    #     target[:, geometry_size:geometry_size+orientation_size]
+    # ).item())
 
-    print("categorical loss:", categorical_weight * categorical_loss(
-        reconstruction_matched[:, geometry_size:geometry_size+orientation_size+num_categories],
-        target[:, geometry_size+orientation_size].long()
-    ).item())
+    # print("categorical loss:", categorical_weight * categorical_loss(
+    #     reconstruction_matched[:, geometry_size:geometry_size+orientation_size+num_categories],
+    #     target[:, geometry_size+orientation_size].long()
+    # ).item())
 
-    print("existence loss:", existence_weight * existence_loss(
-        reconstruction[:, geometry_size+orientation_size+num_categories],
-        target_existence
-    ).item())
+    # print("existence loss:", existence_weight * existence_loss(
+    #     reconstruction[:, geometry_size+orientation_size+num_categories],
+    #     target_existence
+    # ).item())
 
-    for matched_index in range(target.shape[0]):
-        print(f'===== MATCH {matched_index + 1} =====')
-        print("Geometry Predicted:", reconstruction_matched[matched_index, 0:geometry_size].tolist())
-        print("Geometry Actual:", target[matched_index, 0:geometry_size].tolist())
-        print("Orientation Predicted:", reconstruction_matched[matched_index, geometry_size:geometry_size+orientation_size].tolist())
-        print("Orientation Actual:", target[matched_index, geometry_size:geometry_size+orientation_size].tolist())
-        print("Category Predicted:", reconstruction_matched[matched_index, geometry_size+orientation_size:geometry_size+orientation_size+num_categories].argmax().item())
-        print("Category Actual:", target[matched_index, geometry_size+orientation_size].long().item())
-        print("Existence Predicted:", reconstruction_matched[matched_index, geometry_size+orientation_size+num_categories].item() > 0)
+    # for matched_index in range(target.shape[0]):
+    #     print(f'===== MATCH {matched_index + 1} =====')
+    #     print("Geometry Predicted:", reconstruction_matched[matched_index, 0:geometry_size].tolist())
+    #     print("Geometry Actual:", target[matched_index, 0:geometry_size].tolist())
+    #     print("Orientation Predicted:", reconstruction_matched[matched_index, geometry_size:geometry_size+orientation_size].tolist())
+    #     print("Orientation Actual:", target[matched_index, geometry_size:geometry_size+orientation_size].tolist())
+    #     print("Category Predicted:", reconstruction_matched[matched_index, geometry_size+orientation_size:geometry_size+orientation_size+num_categories].argmax().item())
+    #     print("Category Actual:", target[matched_index, geometry_size+orientation_size].long().item())
+    #     print("Existence Predicted:", reconstruction_matched[matched_index, geometry_size+orientation_size+num_categories].item() > 0)
 
-    for unmatched_index in range(reconstruction_unmatched.shape[0]):
-        print(f'===== NON-MATCH {unmatched_index + 1} =====')
-        print("Geometry Predicted:", reconstruction_unmatched[unmatched_index, 0:geometry_size].tolist())
-        print("Orientation Predicted:", reconstruction_unmatched[unmatched_index, geometry_size:geometry_size+orientation_size].tolist())
-        print("Category Predicted:", reconstruction_unmatched[unmatched_index, geometry_size+orientation_size:geometry_size+orientation_size+num_categories].argmax().item())
-        print("Existence Predicted:", reconstruction_unmatched[unmatched_index, geometry_size+orientation_size+num_categories].item() > 0)
+    # for unmatched_index in range(reconstruction_unmatched.shape[0]):
+    #     print(f'===== NON-MATCH {unmatched_index + 1} =====')
+    #     print("Geometry Predicted:", reconstruction_unmatched[unmatched_index, 0:geometry_size].tolist())
+    #     print("Orientation Predicted:", reconstruction_unmatched[unmatched_index, geometry_size:geometry_size+orientation_size].tolist())
+    #     print("Category Predicted:", reconstruction_unmatched[unmatched_index, geometry_size+orientation_size:geometry_size+orientation_size+num_categories].argmax().item())
+    #     print("Existence Predicted:", reconstruction_unmatched[unmatched_index, geometry_size+orientation_size+num_categories].item() > 0)
 
     w, h = 500, 500
     scale = 0.2
@@ -104,7 +105,7 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_TESTS):
         dim = t[2:4]
         ori = t[4:6]
         ori = clip_orientation(ori / np.linalg.norm(ori))
-        cat = categories_reverse_dict[str(t[6])]
+        cat = categories_reverse_dict[str(int(t[6]))]
 
         if (ori[1] == 0): # Need to flip dimensions if oriented towards East/West
             dim[0], dim[1] = dim[1], dim[0]

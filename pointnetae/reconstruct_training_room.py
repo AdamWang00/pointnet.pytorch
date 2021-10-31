@@ -15,8 +15,7 @@ from deep_sdf.mesh_color import create_mesh
 
 # ========== BEGIN PARAMS ==========
 
-LOAD_PATH = os.path.join("experiments", model_name, model_params_subdir, epoch_load + ".pth")
-NUM_RECONSTRUCTIONS = 1
+NUM_RECONSTRUCTIONS = 8
 DATASET_OFFSET = 0
 
 # THESE MUST REFERENCE THE MODELS WHOSE LATENT CODES ARE USED DURING PREPROCESSING
@@ -58,9 +57,10 @@ for idx in range(len(categories_reverse_dict)):
     decoder.eval()
     decoders.append(decoder)
 
+load_path = os.path.join("experiments", model_name, model_params_subdir, epoch_load + ".pth")
 model = PointNetAE()
-model.load_state_dict(torch.load(LOAD_PATH))
-model = model.eval()
+model.load_state_dict(torch.load(load_path))
+model = model.eval().cuda()
 
 scene_dataset = SceneDataset(rooms_dir, max_num_points)
 
@@ -76,14 +76,14 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
         continue
 
     print("Reconstructing room #" + str(i))
-    scene, _ = scene_dataset.__getitem__(i)
-    scene = scene.unsqueeze(0)
+    scene, target = scene_dataset.__getitem__(i)
+    scene = scene.transpose(1, 0).cuda()
+    cats = target[:, geometry_size + orientation_size].numpy().astype(int)
 
-    reconstruction, latent_code, _, _ = model(scene.transpose(2, 1))
-    reconstruction = reconstruction[0]
+    reconstruction, latent_code = model(scene.unsqueeze(0), np.expand_dims(cats, 0))
+    reconstruction = reconstruction[0].detach().cpu()
     latent_code = latent_code[0]
 
-    reconstruction = reconstruction.squeeze().detach()
     areas = reconstruction[:, 2] * reconstruction[:, 3]
     indices_area_descending = np.argsort(-areas)
     reconstruction = reconstruction[indices_area_descending]
@@ -108,7 +108,7 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
         decode_shape_input = torch.cat(
             (
                 latent_code,
-                reconstruction[idx, 0:geometry_size+orientation_size]
+                reconstruction[idx, 0:geometry_size+orientation_size].cuda()
             )
         )
         shape_code = model.decode_shape(decode_shape_input, cat_idx)

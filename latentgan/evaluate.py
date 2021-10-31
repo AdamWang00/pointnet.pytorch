@@ -6,8 +6,8 @@ from scipy.linalg import sqrtm
 from latentgan.config import *
 from latentgan.dataset import SceneLatentDataset
 from latentgan.model import WGAN_GP
-from pointnetvae.model import PointNetVAE
-from pointnetae.model import PointNetAE
+from latentgan.model import PointNetVAE
+from latentgan.model import PointNetAE
 
 NUM_FAKE_CODES = 10000 # 1000000
 EVALUATE_VAE = False

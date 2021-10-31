@@ -75,7 +75,7 @@ def quaternion_to_orientation(qua, axis = np.array([0, 0, 1])):
 SAVE = True
 
 room_type = "Bedroom" # name of room in 3D-FRONT
-room_name = "Bedroom2" # name of subdirectory to save to
+room_name = "Bedroom1" # name of subdirectory to save to
 
 super_categories = {'bed', 'nightstand'}
 

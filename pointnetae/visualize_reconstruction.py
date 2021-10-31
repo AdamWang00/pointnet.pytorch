@@ -7,8 +7,11 @@ import os
 from pointnetae.config import *
 from pointnetae.dataset import SceneDataset
 
-NUM_RECONSTRUCTIONS = 1
+NUM_RECONSTRUCTIONS = 8
 DATASET_OFFSET = 0
+
+viewport_w = 1600
+viewport_h = 900
 
 def get_trimesh_and_uv(scene_or_mesh):
     if isinstance(scene_or_mesh, trimesh.Scene):
@@ -35,7 +38,7 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
     room_id = scene_dataset.get_room_id(i)
 
     furniture_info_list_gt_path = os.path.join(roominfos_dir, room_id + ".json")
-    furniture_info_list_reconstruction_path = os.path.join("experiments", model_name, "TrainingReconstructions", epoch_load, str(i), "info.json")
+    furniture_info_list_reconstruction_path = os.path.join("experiments", model_name, model_reconstructions_subdir, epoch_load, str(i), "info.json")
 
     with open(furniture_info_list_gt_path, "r") as f:
         furniture_info_list_gt = json.load(f)
@@ -46,7 +49,8 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
     scene = Scene()
     gap_size = 2
 
-    for furniture_info_gt in furniture_info_list_gt[0:2]:
+    # GT
+    for furniture_info_gt in furniture_info_list_gt:
         # print(json.dumps(furniture_info_gt, indent=2))
         model_id = furniture_info_gt["id"]
         pos = furniture_info_gt["pos"]
@@ -71,7 +75,7 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
 
             # rotate
             y_axis = [0, 1, 0]
-            angle = np.arctan(np.divide(ori[0], ori[1]))
+            angle = np.arctan(np.divide(ori[0], ori[1] + 1e-8))
             gt_mesh.apply_transform(trimesh.transformations.rotation_matrix(angle, y_axis))
 
             # translate
@@ -82,8 +86,9 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
             print("[error]", str(e))
             continue
 
+    # Reconstruction
     for furniture_info_reconstruction in furniture_info_list_reconstruction:
-        print(json.dumps(furniture_info_reconstruction, indent=2))
+        # print(json.dumps(furniture_info_reconstruction, indent=2))
         mesh_filepath = furniture_info_reconstruction["mesh_filepath"]
         pos = furniture_info_reconstruction["pos"]
         dim = furniture_info_reconstruction["dim"]
@@ -103,7 +108,7 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
 
             # rotate
             y_axis = [0, 1, 0]
-            angle = np.arctan(np.divide(ori[0], ori[1]))
+            angle = np.arctan(np.divide(ori[0], ori[1] + 1e-8))
             gen_mesh.apply_transform(trimesh.transformations.rotation_matrix(angle, y_axis))
 
             # translate
@@ -114,13 +119,13 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
             print("[error]", str(e))
             continue
 
-    camera = PerspectiveCamera(yfov=np.pi / 3.0, aspectRatio=1.0)
+    camera = PerspectiveCamera(yfov=np.pi / 3.0, aspectRatio=viewport_w/viewport_h)
     camera_pose = np.array([
         [1.0, 0.0, 0.0, 0.0],
-        [0.0, 1.0, 0.0, 0.0],
-        [0.0, 0.0, 1.0, 0.0],
+        [0.0, 0.0, 1.0, 8.0],
+        [0.0, -1.0, 0.0, 0.0],
         [0.0, 0.0, 0.0, 1.0],
     ])
     scene.add(camera, pose=camera_pose)
 
-    Viewer(scene, use_raymond_lighting=True, viewport_size=(1200,900))
+    Viewer(scene, use_raymond_lighting=True, viewport_size=(viewport_w,viewport_h))

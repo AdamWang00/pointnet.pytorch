@@ -5,9 +5,9 @@ from latentgan.model import WGAN_GP
 from latentgan.dataset import SceneLatentDataset
 from latentgan.config import *
 if ae_model_class == "pointnetvae":
-    from pointnetvae.model import PointNetVAE
+    from latentgan.model import PointNetVAE
 elif ae_model_class == "pointnetae":
-    from pointnetae.model import PointNetAE
+    from latentgan.model import PointNetAE
 
 data_dir = os.path.join(data_dir, room_name)
 data_rooms_dir = os.path.join(data_dir, rooms_subdir)
