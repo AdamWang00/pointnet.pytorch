@@ -1,9 +1,9 @@
-model_name = "bedroom_latent1"
+model_name = "bedroom_latent3"
 iter_load = "200000"
 
 data_dir = "../data"
 
-save_per_iters = 20000
+save_per_iters = 50000
 
 model_generations_subdir = "Generations"
 
@@ -11,6 +11,30 @@ params_history = {
     "bedroom_latent1": {
         "ae_model_class": "pointnetae",
         "ae_model_name": "bedroom_partial6",
+        "ae_epoch_load": "latest",
+        "generator_iters": 200000,
+        "batch_size": 64,
+        "learning_rate_g": 0.0001,
+        "learning_rate_d": 0.0001,
+        "z_dim": 256,
+        "hidden_dims_g": [512, 512, 512, 512],
+        "hidden_dims_d": [512, 512, 512, 512]
+    },
+    "bedroom_latent2": {
+        "ae_model_class": "pointnetae",
+        "ae_model_name": "bedroom_partial6e",
+        "ae_epoch_load": "latest",
+        "generator_iters": 200000,
+        "batch_size": 64,
+        "learning_rate_g": 0.0001,
+        "learning_rate_d": 0.0001,
+        "z_dim": 256,
+        "hidden_dims_g": [512, 512, 512, 512],
+        "hidden_dims_d": [512, 512, 512, 512]
+    },
+    "bedroom_latent3": {
+        "ae_model_class": "pointnetae",
+        "ae_model_name": "bedroom_partial6h2",
         "ae_epoch_load": "latest",
         "generator_iters": 200000,
         "batch_size": 64,

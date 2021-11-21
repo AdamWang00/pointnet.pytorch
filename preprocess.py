@@ -2,8 +2,39 @@ import os
 import json
 import numpy as np
 import torch
-from pointnetvae.config import data_dir, rooms_subdir, roominfos_subdir
 
+# ========== BEGIN PARAMS ==========
+
+SAVE = True
+
+room_type = "Bedroom" # name of room in 3D-FRONT
+room_name = "Bedroom2" # name of subdirectory to save to
+
+super_categories = {'bed', 'cabinet', 'chair', 'largeSofa', 'largeTable', 'nightstand', 'smallStool', 'smallTable', 'tvStand'}
+
+deepsdf_experiments_dir = "../DeepSDF/experiments"
+deepsdf_latent_code_subpaths = {
+    "bed": "bed1/LatentCodes/1000.pth",
+    "cabinet": "cabinet1/LatentCodes/1000.pth",
+    "chair": "chair1/LatentCodes/1000.pth",
+    "largeSofa": "largeSofa1/LatentCodes/1000.pth",
+    "largeTable": "largeTable1/LatentCodes/1000.pth",
+    "nightstand": "nightstand1/LatentCodes/1000.pth",
+    "smallStool": "smallStool1/LatentCodes/1000.pth",
+    "smallTable": "smallTable1/LatentCodes/1000.pth",
+    "tvStand": "tvStand1/LatentCodes/1000.pth",
+}
+
+scenes_dir = "../data/3D-FRONT"
+model_info_filepath = "../data/model_info.json"
+
+data_dir = "./data"
+rooms_subdir = "Rooms"
+roominfos_subdir = "RoomInfos"
+
+model_category_to_super_category = {'armchair': 'chair', 'Lounge Chair / Cafe Chair / Office Chair': 'chair', 'Pendant Lamp': 'lighting', 'Coffee Table': 'largeTable', 'Corner/Side Table': 'smallTable', 'Dining Table': 'largeTable', 'King-size Bed': 'bed', 'Nightstand': 'nightstand', 'Bookcase / jewelry Armoire': 'cabinet', 'Three-Seat / Multi-set sofa': 'largeSofa', 'TV Stand': 'tvStand', 'Drawer Chest / Corner cabinet': 'cabinet', 'Wardrobe': 'cabinet', 'Footstool / Sofastool / Bed End Stool / Stool': 'smallStool', 'Sideboard / Side Cabinet / Console': 'cabinet', 'Ceiling Lamp': 'lighting', 'Children Cabinet': 'cabinet', 'Bed Frame': 'bed', 'Round End Table': 'smallTable', 'Desk': 'largeTable', 'Single bed': 'bed', 'Loveseat Sofa': 'largeSofa', 'Dining Chair': 'chair', 'Barstool': 'chair', 'Lazy Sofa': 'chair', 'L-shaped Sofa': 'largeSofa', 'Wine Cooler': 'cabinet', 'Dressing Table': 'largeTable', 'Dressing Chair': 'chair', 'Kids Bed': 'bed', 'Classic Chinese Chair': 'chair', 'Bunk Bed': 'bed', 'Chaise Longue Sofa': 'largeSofa', 'Shelf': 'cabinet', '衣帽架': 'other', '脚凳/墩': 'other', '博古架': 'other', '置物架': 'other', '装饰架': 'other'}
+
+# ========== END PARAMS ==========
 
 def vector_dot_matrix3(v, mat):
     rot_mat = np.mat(mat)
@@ -70,28 +101,6 @@ def quaternion_to_orientation(qua, axis = np.array([0, 0, 1])):
     rotMatrix = quaternion_to_matrix(qua)
     return clip_orientation(vector_dot_matrix3(axis, rotMatrix))
 
-# ========== BEGIN PARAMS ==========
-
-SAVE = True
-
-room_type = "Bedroom" # name of room in 3D-FRONT
-room_name = "Bedroom1" # name of subdirectory to save to
-
-super_categories = {'bed', 'nightstand'}
-
-deepsdf_experiments_dir = "../../DeepSDF/experiments"
-deepsdf_latent_code_subpaths = {
-    "bed": "bed1/LatentCodes/1000.pth",
-    "nightstand": "nightstand1/LatentCodes/1000.pth"
-}
-
-scenes_dir = "../../data/3D-FRONT"
-model_info_filepath = "../../data/model_info.json"
-
-model_category_to_super_category = {'armchair': 'chair', 'Lounge Chair / Cafe Chair / Office Chair': 'chair', 'Pendant Lamp': 'lighting', 'Coffee Table': 'largeTable', 'Corner/Side Table': 'smallTable', 'Dining Table': 'largeTable', 'King-size Bed': 'bed', 'Nightstand': 'nightstand', 'Bookcase / jewelry Armoire': 'cabinet', 'Three-Seat / Multi-set sofa': 'largeSofa', 'TV Stand': 'tvStand', 'Drawer Chest / Corner cabinet': 'cabinet', 'Wardrobe': 'cabinet', 'Footstool / Sofastool / Bed End Stool / Stool': 'smallStool', 'Sideboard / Side Cabinet / Console': 'cabinet', 'Ceiling Lamp': 'lighting', 'Children Cabinet': 'cabinet', 'Bed Frame': 'bed', 'Round End Table': 'smallTable', 'Desk': 'largeTable', 'Single bed': 'bed', 'Loveseat Sofa': 'largeSofa', 'Dining Chair': 'chair', 'Barstool': 'chair', 'Lazy Sofa': 'chair', 'L-shaped Sofa': 'largeSofa', 'Wine Cooler': 'cabinet', 'Dressing Table': 'largeTable', 'Dressing Chair': 'chair', 'Kids Bed': 'bed', 'Classic Chinese Chair': 'chair', 'Bunk Bed': 'bed', 'Chaise Longue Sofa': 'largeSofa', 'Shelf': 'cabinet', '衣帽架': 'other', '脚凳/墩': 'other', '博古架': 'other', '置物架': 'other', '装饰架': 'other'}
-
-# ========== END PARAMS ==========
-
 deepsdf_latent_codes = {} # model_id -> np.array
 for super_category in super_categories:
     deepsdf_split_path = os.path.join(deepsdf_experiments_dir, "splits", super_category + ".json")
@@ -110,8 +119,10 @@ for super_category in super_categories:
 
 if SAVE:
     base_dir = os.path.join(data_dir, room_name)
-    if not os.path.isdir(base_dir):
+    if not os.path.isdir(base_dir) or input(f"overwrite {base_dir}? (y)") == "y":
         os.makedirs(base_dir)
+    else:
+        raise Exception
     rooms_dir = os.path.join(base_dir, rooms_subdir)
     if not os.path.isdir(rooms_dir):
         os.makedirs(rooms_dir)

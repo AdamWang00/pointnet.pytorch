@@ -7,6 +7,8 @@ import os
 from pointnetae.config import *
 from pointnetae.dataset import SceneDataset
 
+IS_TESTING = True
+INCLUDE_GT_SHAPE_CODE_RECONSTRUCTION = True
 NUM_RECONSTRUCTIONS = 8
 DATASET_OFFSET = 0
 
@@ -32,12 +34,17 @@ base_dir = os.path.join(data_dir, room_name)
 rooms_dir = os.path.join(base_dir, rooms_subdir)
 roominfos_dir = os.path.join(base_dir, roominfos_subdir)
 
-scene_dataset = SceneDataset(rooms_dir, max_num_points)
+scene_dataset = SceneDataset(rooms_dir, max_num_points, is_testing=IS_TESTING)
 
 for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
+    print(i)
     room_id = scene_dataset.get_room_id(i)
-
     furniture_info_list_gt_path = os.path.join(roominfos_dir, room_id + ".json")
+
+    if IS_TESTING:
+        model_reconstructions_subdir = model_testing_reconstructions_subdir
+    else:
+        model_reconstructions_subdir = model_training_reconstructions_subdir
     furniture_info_list_reconstruction_path = os.path.join("experiments", model_name, model_reconstructions_subdir, epoch_load, str(i), "info.json")
 
     with open(furniture_info_list_gt_path, "r") as f:
@@ -47,7 +54,9 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
         furniture_info_list_reconstruction = json.load(f)
 
     scene = Scene()
-    gap_size = 2
+    gap_size = 3
+    if INCLUDE_GT_SHAPE_CODE_RECONSTRUCTION:
+        gap_size *= 1.5
 
     # GT
     for furniture_info_gt in furniture_info_list_gt:
@@ -79,7 +88,7 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
             gt_mesh.apply_transform(trimesh.transformations.rotation_matrix(angle, y_axis))
 
             # translate
-            gt_mesh.apply_translation((pos[0], 0, pos[1])) # todo: use y pos
+            gt_mesh.apply_translation((pos[0], scale_y * bbox_dim[1] / 2, pos[1])) # todo: use y pos
 
             scene.add_node(Node(mesh=Mesh.from_trimesh(gt_mesh), translation=[-gap_size, 0, 0]))
         except ValueError as e:
@@ -112,12 +121,38 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
             gen_mesh.apply_transform(trimesh.transformations.rotation_matrix(angle, y_axis))
 
             # translate
-            gen_mesh.apply_translation((pos[0], 0, pos[1])) # todo: use y pos
+            gen_mesh.apply_translation((pos[0], scale_y * bbox_dim[1] / 2, pos[1])) # todo: use y pos
 
             scene.add_node(Node(mesh=Mesh.from_trimesh(gen_mesh), translation=[gap_size, 0, 0]))
         except ValueError as e:
             print("[error]", str(e))
             continue
+        
+        if INCLUDE_GT_SHAPE_CODE_RECONSTRUCTION and "mesh_gtshapecode_filepath" in furniture_info_reconstruction:
+            try:
+                mesh_filepath = furniture_info_reconstruction["mesh_gtshapecode_filepath"]
+                gen_mesh = trimesh.load(mesh_filepath, process=False)
+                assert gen_mesh.visual.kind == 'vertex'
+
+                # scale
+                bbox_dim = gen_mesh.bounding_box.extents
+                scale_x = dim[0] / bbox_dim[0]
+                scale_z = dim[1] / bbox_dim[2]
+                scale_y = (scale_x + scale_z) / 2 # todo: use y dim
+                gen_mesh.apply_scale((scale_x, scale_y, scale_z))
+
+                # rotate
+                y_axis = [0, 1, 0]
+                angle = np.arctan(np.divide(ori[0], ori[1] + 1e-8))
+                gen_mesh.apply_transform(trimesh.transformations.rotation_matrix(angle, y_axis))
+
+                # translate
+                gen_mesh.apply_translation((pos[0], scale_y * bbox_dim[1] / 2, pos[1])) # todo: use y pos
+
+                scene.add_node(Node(mesh=Mesh.from_trimesh(gen_mesh), translation=[0, 0, 0]))
+            except ValueError as e:
+                print("[error]", str(e))
+                continue
 
     camera = PerspectiveCamera(yfov=np.pi / 3.0, aspectRatio=viewport_w/viewport_h)
     camera_pose = np.array([

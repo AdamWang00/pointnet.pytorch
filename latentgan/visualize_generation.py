@@ -6,7 +6,7 @@ import json
 import os
 from latentgan.config import *
 
-NUM_GENERATIONS = 1
+NUM_GENERATIONS = 8
 OFFSET = 0
 
 viewport_w = 900
@@ -47,7 +47,7 @@ for i in range(OFFSET, OFFSET + NUM_GENERATIONS):
         try:
             gen_mesh = trimesh.load(mesh_filepath, process=False)
             assert gen_mesh.visual.kind == 'vertex'
-            
+
             # scale
             bbox_dim = gen_mesh.bounding_box.extents
             scale_x = dim[0] / bbox_dim[0]
@@ -61,7 +61,7 @@ for i in range(OFFSET, OFFSET + NUM_GENERATIONS):
             gen_mesh.apply_transform(trimesh.transformations.rotation_matrix(angle, y_axis))
 
             # translate
-            gen_mesh.apply_translation((pos[0], 0, pos[1])) # todo: use y pos
+            gen_mesh.apply_translation((pos[0], scale_y * bbox_dim[1] / 2, pos[1])) # todo: use y pos
 
             scene.add_node(Node(mesh=Mesh.from_trimesh(gen_mesh), translation=[0, 0, 0]))
         except ValueError as e:

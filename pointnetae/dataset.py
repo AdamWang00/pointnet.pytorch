@@ -1,4 +1,5 @@
 import os
+import json
 import torch
 import numpy as np
 from pointnetae.config import *
@@ -8,12 +9,19 @@ class SceneDataset(torch.utils.data.Dataset):
         self,
         data_source,
         max_num_points,
-        load_ram=False
+        load_ram=False,
+        is_testing=False,
     ):
         self.data_source = data_source
-        self.npyfiles = os.listdir(data_source)
         self.load_ram = load_ram
         self.max_num_points = max_num_points
+
+        if is_testing:
+            split_path = os.path.join(split_dir, room_name, split_test)
+        else:
+            split_path = os.path.join(split_dir, room_name, split_train)
+        with open(split_path, "r") as f:
+            self.npyfiles = json.load(f)
 
         if load_ram:
             self.loaded_data = []
