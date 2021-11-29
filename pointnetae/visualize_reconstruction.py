@@ -163,4 +163,4 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
     ])
     scene.add(camera, pose=camera_pose)
 
-    Viewer(scene, use_raymond_lighting=True, viewport_size=(viewport_w,viewport_h))
+    Viewer(scene, use_raymond_lighting=True, viewport_size=(viewport_w,viewport_h), render_flags={"cull_faces": False})

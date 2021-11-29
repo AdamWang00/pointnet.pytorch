@@ -22,11 +22,25 @@ NUM_GENERATIONS = 8
 # THESE MUST REFERENCE THE MODELS WHOSE LATENT CODES ARE USED DURING PREPROCESSING
 deepsdf_model_spec_subpaths = {
     "bed": "bed1/specs.json",
-    "nightstand": "nightstand1/specs.json"
+    "cabinet": "cabinet1/specs.json",
+    "chair": "chair1/specs.json",
+    "largeSofa": "largeSofa1/specs.json",
+    "largeTable": "largeTable1/specs.json",
+    "nightstand": "nightstand1/specs.json",
+    "smallStool": "smallStool1/specs.json",
+    "smallTable": "smallTable1/specs.json",
+    "tvStand": "tvStand1/specs.json",
 }
 deepsdf_model_param_subpaths = {
     "bed": "bed1/ModelParameters/1000.pth",
-    "nightstand": "nightstand1/ModelParameters/1000.pth"
+    "cabinet": "cabinet1/ModelParameters/1000.pth",
+    "chair": "chair1/ModelParameters/1000.pth",
+    "largeSofa": "largeSofa1/ModelParameters/1000.pth",
+    "largeTable": "largeTable1/ModelParameters/1000.pth",
+    "nightstand": "nightstand1/ModelParameters/1000.pth",
+    "smallStool": "smallStool1/ModelParameters/1000.pth",
+    "smallTable": "smallTable1/ModelParameters/1000.pth",
+    "tvStand": "tvStand1/ModelParameters/1000.pth",
 }
 
 deepsdf_experiments_dir = "../../DeepSDF"

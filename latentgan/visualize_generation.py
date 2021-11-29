@@ -28,6 +28,7 @@ def get_trimesh_and_uv(scene_or_mesh):
     return mesh, uv
 
 for i in range(OFFSET, OFFSET + NUM_GENERATIONS):
+    print(i)
     furniture_info_list_generation_path = os.path.join("experiments", model_name, model_generations_subdir, iter_load, str(i), "info.json")
 
     with open(furniture_info_list_generation_path, "r") as f:
@@ -77,4 +78,4 @@ for i in range(OFFSET, OFFSET + NUM_GENERATIONS):
     ])
     scene.add(camera, pose=camera_pose)
 
-    Viewer(scene, use_raymond_lighting=True, viewport_size=(viewport_w,viewport_h))
+    Viewer(scene, use_raymond_lighting=True, viewport_size=(viewport_w,viewport_h), render_flags={"cull_faces": False})

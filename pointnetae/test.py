@@ -8,10 +8,12 @@ from pointnetae.config import *
 from pointnetae.utils import *
 from pointnetae.dataset import SceneDataset
 
-LOAD_PATH = os.path.join("experiments", model_name, model_params_subdir, epoch_load + ".pth")
+IS_TESTING = True
+HIDE_NONEXISTENT_OUTPUTS = False
 NUM_TESTS = 8
 DATASET_OFFSET = 0
-HIDE_NONEXISTENT_OUTPUTS = True
+
+LOAD_PATH = os.path.join("experiments", model_name, model_params_subdir, epoch_load + ".pth")
 
 model = PointNetAE()
 model.load_state_dict(torch.load(LOAD_PATH))
@@ -25,7 +27,7 @@ rooms_dir = os.path.join(base_dir, rooms_subdir)
 with open(os.path.join(base_dir, "categories.json"), "r") as f:
     categories_reverse_dict = json.load(f)
 
-scene_dataset = SceneDataset(rooms_dir, max_num_points)
+scene_dataset = SceneDataset(rooms_dir, max_num_points, is_testing=IS_TESTING)
 
 for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_TESTS):
     scene, target = scene_dataset.__getitem__(i)
