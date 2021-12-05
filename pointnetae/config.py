@@ -1,4 +1,4 @@
-model_name = "bedroom_full1c1"
+model_name = "bedroom_full1c3"
 epoch_load = "latest"
 print("pointnetae", model_name, epoch_load)
 

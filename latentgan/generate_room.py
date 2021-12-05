@@ -1,4 +1,6 @@
 import sys
+
+from pointnetae.reconstruct_room import ORI_CLIP_THRESHOLD
 sys.path.insert(0, "/home/awang156/DeepSDF")
 import os
 import torch
@@ -18,6 +20,7 @@ from deep_sdf.mesh_color import create_mesh
 # ========== BEGIN PARAMS ==========
 
 NUM_GENERATIONS = 8
+ORI_CLIP_THRESHOLD = 0.8
 
 # THESE MUST REFERENCE THE MODELS WHOSE LATENT CODES ARE USED DURING PREPROCESSING
 deepsdf_model_spec_subpaths = {
@@ -135,7 +138,7 @@ if __name__ == "__main__":
             pos = r[0:2]
             dim = r[2:4]
             ori = r[4:6]
-            ori = clip_orientation(ori / np.linalg.norm(ori))
+            ori = clip_orientation(ori / np.linalg.norm(ori), threshold=ORI_CLIP_THRESHOLD)
             cat_idx = np.argmax(r[geometry_size+orientation_size:geometry_size+orientation_size+num_categories])
             cat = categories_reverse_dict[str(cat_idx)]
             existence = r[geometry_size+orientation_size+num_categories] > 0

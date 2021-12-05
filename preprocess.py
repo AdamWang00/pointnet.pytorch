@@ -43,7 +43,7 @@ def vector_dot_matrix3(v, mat):
     return np.array(result.T)[0]
 
 
-def clip_orientation(d, threshold=0.8):
+def clip_orientation(d, threshold=0.0):
     '''
     clip to [+-1, 0, +-1] if close enough
     '''
@@ -99,7 +99,7 @@ def quaternion_to_orientation(qua, axis = np.array([0, 0, 1])):
     :return:
     """
     rotMatrix = quaternion_to_matrix(qua)
-    return clip_orientation(vector_dot_matrix3(axis, rotMatrix))
+    return clip_orientation(vector_dot_matrix3(axis, rotMatrix), threshold=0.8)
 
 deepsdf_latent_codes = {} # model_id -> np.array
 for super_category in super_categories:

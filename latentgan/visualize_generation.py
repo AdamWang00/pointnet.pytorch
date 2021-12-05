@@ -64,7 +64,7 @@ for i in range(OFFSET, OFFSET + NUM_GENERATIONS):
             # translate
             gen_mesh.apply_translation((pos[0], scale_y * bbox_dim[1] / 2, pos[1])) # todo: use y pos
 
-            scene.add_node(Node(mesh=Mesh.from_trimesh(gen_mesh), translation=[0, 0, 0]))
+            scene.add_node(Node(mesh=Mesh.from_trimesh(gen_mesh, smooth=False), translation=[0, 0, 0]))
         except ValueError as e:
             print("[error]", str(e))
             continue

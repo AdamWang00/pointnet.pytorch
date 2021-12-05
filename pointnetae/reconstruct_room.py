@@ -20,6 +20,8 @@ INCLUDE_GT_SHAPE_CODE_RECONSTRUCTION = True
 NUM_RECONSTRUCTIONS = 8
 DATASET_OFFSET = 0
 
+ORI_CLIP_THRESHOLD = 0.9
+
 # THESE MUST REFERENCE THE MODELS WHOSE LATENT CODES ARE USED DURING PREPROCESSING
 deepsdf_model_spec_subpaths = {
     "bed": "bed1/specs.json",
@@ -130,7 +132,7 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
         pos = r[0:2]
         dim = r[2:4]
         ori = r[4:6]
-        ori = clip_orientation(ori / np.linalg.norm(ori))
+        ori = clip_orientation(ori / np.linalg.norm(ori), threshold=ORI_CLIP_THRESHOLD)
         cat_idx = np.argmax(r[geometry_size+orientation_size:geometry_size+orientation_size+num_categories])
         cat = categories_reverse_dict[str(cat_idx)]
         existence = r[geometry_size+orientation_size+num_categories] > 0

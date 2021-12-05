@@ -90,7 +90,7 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
             # translate
             gt_mesh.apply_translation((pos[0], scale_y * bbox_dim[1] / 2, pos[1])) # todo: use y pos
 
-            scene.add_node(Node(mesh=Mesh.from_trimesh(gt_mesh), translation=[-gap_size, 0, 0]))
+            scene.add_node(Node(mesh=Mesh.from_trimesh(gt_mesh, smooth=False), translation=[-gap_size, 0, 0]))
         except ValueError as e:
             print("[error]", str(e))
             continue
@@ -123,7 +123,7 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
             # translate
             gen_mesh.apply_translation((pos[0], scale_y * bbox_dim[1] / 2, pos[1])) # todo: use y pos
 
-            scene.add_node(Node(mesh=Mesh.from_trimesh(gen_mesh), translation=[gap_size, 0, 0]))
+            scene.add_node(Node(mesh=Mesh.from_trimesh(gen_mesh, smooth=False), translation=[gap_size, 0, 0]))
         except ValueError as e:
             print("[error]", str(e))
             continue
@@ -149,7 +149,7 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
                 # translate
                 gen_mesh.apply_translation((pos[0], scale_y * bbox_dim[1] / 2, pos[1])) # todo: use y pos
 
-                scene.add_node(Node(mesh=Mesh.from_trimesh(gen_mesh), translation=[0, 0, 0]))
+                scene.add_node(Node(mesh=Mesh.from_trimesh(gen_mesh, smooth=False), translation=[0, 0, 0]))
             except ValueError as e:
                 print("[error]", str(e))
                 continue
