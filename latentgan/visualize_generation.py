@@ -1,7 +1,6 @@
 import trimesh
 from pyrender import Mesh, Node, Scene, Viewer, PerspectiveCamera
 import numpy as np
-from PIL import Image
 import json
 import os
 from latentgan.config import *
@@ -36,7 +35,6 @@ for i in range(OFFSET, OFFSET + NUM_GENERATIONS):
 
     scene = Scene()
 
-    # Reconstruction
     for furniture_info_generation in furniture_info_list_generation:
         # print(json.dumps(furniture_info_generation, indent=2))
         mesh_filepath = furniture_info_generation["mesh_filepath"]
@@ -58,7 +56,7 @@ for i in range(OFFSET, OFFSET + NUM_GENERATIONS):
 
             # rotate
             y_axis = [0, 1, 0]
-            angle = np.arctan(np.divide(ori[0], ori[1] + 1e-8))
+            angle = np.arctan2(ori[0], ori[1])
             gen_mesh.apply_transform(trimesh.transformations.rotation_matrix(angle, y_axis))
 
             # translate

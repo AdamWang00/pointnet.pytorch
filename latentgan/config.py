@@ -1,4 +1,4 @@
-model_name = "bedroom_latent4"
+model_name = "bedroom_latent5a"
 iter_load = "200000"
 print("latentgan", model_name, iter_load)
 
@@ -48,6 +48,54 @@ params_history = {
     "bedroom_latent4": {
         "ae_model_class": "pointnetae",
         "ae_model_name": "bedroom_full1c1",
+        "ae_epoch_load": "latest",
+        "generator_iters": 200000,
+        "batch_size": 64,
+        "learning_rate_g": 0.0001,
+        "learning_rate_d": 0.0001,
+        "z_dim": 256,
+        "hidden_dims_g": [512, 512, 512, 512],
+        "hidden_dims_d": [512, 512, 512, 512]
+    },
+    "bedroom_latent4a": {
+        "ae_model_class": "pointnetae",
+        "ae_model_name": "bedroom_full1c1",
+        "ae_epoch_load": "latest",
+        "generator_iters": 200000,
+        "batch_size": 64,
+        "learning_rate_g": 0.0001,
+        "learning_rate_d": 0.0001,
+        "z_dim": 256,
+        "hidden_dims_g": [512, 512, 512, 512, 512, 512],
+        "hidden_dims_d": [512, 512, 512, 512, 512, 512]
+    },
+    "bedroom_latent4b": {
+        "ae_model_class": "pointnetae",
+        "ae_model_name": "bedroom_full1c1",
+        "ae_epoch_load": "latest",
+        "generator_iters": 200000,
+        "batch_size": 64,
+        "learning_rate_g": 0.0001,
+        "learning_rate_d": 0.0001,
+        "z_dim": 256,
+        "hidden_dims_g": [512, 512],
+        "hidden_dims_d": [512, 512]
+    },
+    "bedroom_latent5": {
+        "ae_model_class": "pointnetae",
+        "ae_model_name": "bedroom_full2b",
+        "ae_epoch_load": "latest",
+        "generator_iters": 200000,
+        "batch_size": 64,
+        "learning_rate_g": 0.0001,
+        "learning_rate_d": 0.0001,
+        "z_dim": 256,
+        "hidden_dims_g": [512, 512, 512, 512, 512, 512],
+        "hidden_dims_d": [512, 512, 512, 512, 512, 512]
+    },
+    "bedroom_latent5a": {
+        "ae_model_class": "pointnetae",
+        "ae_model_name": "bedroom_full2b",
         "ae_epoch_load": "latest",
         "generator_iters": 200000,
         "batch_size": 64,

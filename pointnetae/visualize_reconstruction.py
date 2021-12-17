@@ -37,8 +37,9 @@ roominfos_dir = os.path.join(base_dir, roominfos_subdir)
 scene_dataset = SceneDataset(rooms_dir, max_num_points, is_testing=IS_TESTING)
 
 for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
-    print(i)
     room_id = scene_dataset.get_room_id(i)
+    print(i, room_id)
+
     furniture_info_list_gt_path = os.path.join(roominfos_dir, room_id + ".json")
 
     if IS_TESTING:
@@ -84,7 +85,7 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
 
             # rotate
             y_axis = [0, 1, 0]
-            angle = np.arctan(np.divide(ori[0], ori[1] + 1e-8))
+            angle = np.arctan2(ori[0], ori[1])
             gt_mesh.apply_transform(trimesh.transformations.rotation_matrix(angle, y_axis))
 
             # translate
@@ -117,7 +118,7 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
 
             # rotate
             y_axis = [0, 1, 0]
-            angle = np.arctan(np.divide(ori[0], ori[1] + 1e-8))
+            angle = np.arctan2(ori[0], ori[1])
             gen_mesh.apply_transform(trimesh.transformations.rotation_matrix(angle, y_axis))
 
             # translate
@@ -143,7 +144,7 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
 
                 # rotate
                 y_axis = [0, 1, 0]
-                angle = np.arctan(np.divide(ori[0], ori[1] + 1e-8))
+                angle = np.arctan2(ori[0], ori[1])
                 gen_mesh.apply_transform(trimesh.transformations.rotation_matrix(angle, y_axis))
 
                 # translate

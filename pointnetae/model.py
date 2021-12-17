@@ -155,9 +155,9 @@ class PointNetAE(nn.Module):
         x = self.main_module(x)
 
         if latent_code.shape[0] == 1:
-            x = x.view(max_num_points, point_size + 1)
+            x = x.view(max_num_points, point_size_intermediate + 1)
         else:
-            x = x.view(-1, max_num_points, point_size + 1)
+            x = x.view(-1, max_num_points, point_size_intermediate + 1)
         return x
 
 

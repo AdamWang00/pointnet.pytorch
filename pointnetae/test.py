@@ -10,8 +10,8 @@ from pointnetae.dataset import SceneDataset
 
 IS_TESTING = True
 HIDE_NONEXISTENT_OUTPUTS = False
-NUM_TESTS = 1
-DATASET_OFFSET = 7
+NUM_TESTS = 8
+DATASET_OFFSET = 0
 
 LOAD_PATH = os.path.join("experiments", model_name, model_params_subdir, epoch_load + ".pth")
 

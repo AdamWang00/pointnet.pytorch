@@ -1,6 +1,5 @@
 import sys
 
-from pointnetae.reconstruct_room import ORI_CLIP_THRESHOLD
 sys.path.insert(0, "/home/awang156/DeepSDF")
 import os
 import torch
@@ -20,7 +19,8 @@ from deep_sdf.mesh_color import create_mesh
 # ========== BEGIN PARAMS ==========
 
 NUM_GENERATIONS = 8
-ORI_CLIP_THRESHOLD = 0.8
+ORI_CLIP_THRESHOLD = 0.9
+DEEPSDF_SAMPLING_DIM = 256 # = N, results in N^3 samples
 
 # THESE MUST REFERENCE THE MODELS WHOSE LATENT CODES ARE USED DURING PREPROCESSING
 deepsdf_model_spec_subpaths = {
@@ -163,7 +163,7 @@ if __name__ == "__main__":
                     decoders[cat_idx],
                     shape_code,
                     mesh_filepath,
-                    N=512,
+                    N=DEEPSDF_SAMPLING_DIM,
                     max_batch=int(2 ** 17),
                 )
 

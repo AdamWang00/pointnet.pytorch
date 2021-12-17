@@ -8,6 +8,7 @@ from pointnetae.model import PointNetAE
 from pointnetae.config import *
 from pointnetae.utils import *
 from pointnetae.dataset import SceneDataset
+# from PIL import Image, ImageDraw, ImageFont
 
 import deep_sdf
 from networks.deep_sdf_decoder_color import Decoder
@@ -16,9 +17,9 @@ from deep_sdf.mesh_color import create_mesh
 # ========== BEGIN PARAMS ==========
 
 IS_TESTING = True
-INCLUDE_GT_SHAPE_CODE_RECONSTRUCTION = True
-NUM_RECONSTRUCTIONS = 8
-DATASET_OFFSET = 0
+ROOM_IDX_1 = 4
+ROOM_IDX_2 = 44
+NUM_INTERPOLATIONS = 12
 DEEPSDF_SAMPLING_DIM = 256 # = N, results in N^3 samples
 
 ORI_CLIP_THRESHOLD = 0.9
@@ -84,52 +85,49 @@ model = model.eval().cuda()
 scene_dataset = SceneDataset(rooms_dir, max_num_points, is_testing=IS_TESTING)
 
 if IS_TESTING:
-    model_reconstructions_subdir = model_testing_reconstructions_subdir
+    model_interpolations_subdir = model_testing_interpolations_subdir
 else:
-    model_reconstructions_subdir = model_training_reconstructions_subdir
-reconstructions_dir = os.path.join("experiments", model_name, model_reconstructions_subdir, epoch_load)
-os.makedirs(reconstructions_dir, exist_ok=True)
+    model_interpolations_subdir = model_training_interpolations_subdir
+interpolations_dir = os.path.join("experiments", model_name, model_interpolations_subdir, epoch_load, f"{ROOM_IDX_1}_to_{ROOM_IDX_2}")
+os.makedirs(interpolations_dir, exist_ok=True)
 
-for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
-    os.makedirs(os.path.join(reconstructions_dir, str(i)), exist_ok=True)
-    furniture_infos_filepath = os.path.join(reconstructions_dir, str(i), "info.json")
-
-    if os.path.isfile(furniture_infos_filepath):
-        print("Room #" + str(i) + " already exists, skipping")
-        continue
-
-    print("Reconstructing room #" + str(i))
-    scene, target = scene_dataset.__getitem__(i)
+def get_latent(idx):
+    scene, target = scene_dataset.__getitem__(idx)
     scene = scene.transpose(1, 0).cuda()
     cats = target[:, geometry_size + orientation_size].numpy().astype(int)
+    latent_code = model.encoder(scene.unsqueeze(0), np.expand_dims(cats, 0))[0]
+    return latent_code
 
-    reconstruction, latent_code = model(scene.unsqueeze(0), np.expand_dims(cats, 0))
-    reconstruction = reconstruction[0].detach().cpu()
+latent1 = get_latent(ROOM_IDX_1)
+latent2 = get_latent(ROOM_IDX_2)
+
+# latent code goes from latent2 => latent1, so most recently generated will be latent1
+for i in range(NUM_INTERPOLATIONS):
+    os.makedirs(os.path.join(interpolations_dir, str(i)), exist_ok=True)
+    furniture_infos_filepath = os.path.join(interpolations_dir, str(i), "info.json")
+
+    if os.path.isfile(furniture_infos_filepath):
+        print("Interpolation #" + str(i) + " already exists, skipping")
+        continue
+
+    print("Interpolating room #" + str(i))
+    
+    latent2_weight = i / (NUM_INTERPOLATIONS - 1)
+    latent1_weight = 1 - latent2_weight
+
+    latent_code = latent1 * latent1_weight + latent2 * latent2_weight
+    latent_code = latent_code.unsqueeze(0)
+
+    interpolation = model.generate(latent_code=latent_code)
     latent_code = latent_code[0]
+    interpolation = interpolation.detach().cpu()
 
-    cost_mat_position = get_cost_matrix_2d(reconstruction[:, 0:2], target[:, 0:2])
-    cost_mat_dimension = get_cost_matrix_2d(reconstruction[:, 2:4], target[:, 2:4])
-    cost_mat = cost_mat_position + dimensions_matching_weight * cost_mat_dimension
-    cost_mat = cost_mat.detach()
-    target_ind, matched_ind, unmatched_ind = get_assignment_problem_matchings(cost_mat)
-
-    # target and reconstruction_matched both have dim 0 == num_matched
-    num_matched = matched_ind.shape[0]
-    num_unmatched = unmatched_ind.shape[0]
-    assert num_matched + num_unmatched == reconstruction.shape[0]
-    target = target[target_ind]
-    reconstruction_matched = reconstruction[matched_ind]
-    reconstruction_unmatched = reconstruction[unmatched_ind]
+    areas = interpolation[:, 2] * interpolation[:, 3]
+    indices_area_descending = np.argsort(-areas)
+    interpolation = interpolation[indices_area_descending]
 
     furniture_info_list = []
-    for idx in range(num_matched + num_unmatched):
-        if idx < num_matched:
-            r = reconstruction_matched[idx, :].tolist()
-            geo_ori = reconstruction_matched[idx, 0:geometry_size+orientation_size].cuda()
-        else:
-            r = reconstruction_unmatched[idx - num_matched, :].tolist()
-            geo_ori = reconstruction_unmatched[idx - num_matched, 0:geometry_size+orientation_size].cuda()
-
+    for idx, r in zip(indices_area_descending.tolist(), interpolation.tolist()):
         pos = r[0:2]
         dim = r[2:4]
         ori = r[4:6]
@@ -141,14 +139,14 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
         if not existence:
             continue
 
-        print(f"Reconstructing room #{i} furniture #{len(furniture_info_list)} (category {cat})")
+        print(f"Interpolating room #{i} furniture #{len(furniture_info_list)} (category {cat})")
 
-        mesh_filepath = os.path.join(reconstructions_dir, str(i), "mesh_" + str(len(furniture_info_list)))
+        mesh_filepath = os.path.join(interpolations_dir, str(i), "mesh_" + str(len(furniture_info_list)))
 
         decode_shape_input = torch.cat(
             (
                 latent_code,
-                geo_ori
+                interpolation[idx, 0:geometry_size+orientation_size].cuda()
             )
         )
         shape_code = model.decode_shape(decode_shape_input, cat_idx)
@@ -162,6 +160,15 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
                 max_batch=int(2 ** 17),
             )
 
+        # THIS IS DONE IN visualize_reconstruction.py
+        # if (ori[1] == 0): # Need to flip dimensions if oriented towards East/West
+        #     dim[0], dim[1] = dim[1], dim[0]
+
+        # box_nw = (w/2*(1 + (pos[0] - dim[0]/2)), h/2*(1 + (pos[1] - dim[1]/2)))
+        # box_se = (w/2*(1 + (pos[0] + dim[0]/2)), h/2*(1 + (pos[1] + dim[1]/2)))
+
+        # box_center = ((box_nw[0] + box_se[0])/2, (box_nw[1] + box_se[1])/2)
+
         furniture_info = {
             "mesh_filepath": mesh_filepath + ".ply",
             "pos": pos,
@@ -169,22 +176,6 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
             "ori": ori.tolist(),
             "cat": int(cat_idx),
         }
-        
-        # reconstruct mesh using the ground-truth (i.e. target) shape code
-        if INCLUDE_GT_SHAPE_CODE_RECONSTRUCTION and idx < num_matched:
-            gt_shape_code = target[idx, geometry_size + orientation_size + 1:]
-            mesh_gtshapecode_filepath = os.path.join(reconstructions_dir, str(i), "mesh_gtshapecode_" + str(len(furniture_info_list)))
-            furniture_info["mesh_gtshapecode_filepath"] = mesh_gtshapecode_filepath + ".ply"
-
-            with torch.no_grad():
-                create_mesh(
-                    decoders[cat_idx],
-                    gt_shape_code,
-                    mesh_gtshapecode_filepath,
-                    N=DEEPSDF_SAMPLING_DIM,
-                    max_batch=int(2 ** 17),
-                )
-
         furniture_info_list.append(furniture_info)
 
     with open(furniture_infos_filepath, "w") as f:
