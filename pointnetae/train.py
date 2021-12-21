@@ -9,6 +9,7 @@ from pointnetae.dataset import SceneDataset
 
 # from torch.utils.data.dataloader import default_collate # for batching input scenes
 
+REGRESS_UNMATCHED_DIM = True # regress dim of unmatched predictions to 0
 
 NUM_EPOCHS = num_epochs
 BATCH_SIZE = batch_size
@@ -92,7 +93,7 @@ for epoch in range(NUM_EPOCHS):
                 reconstruction_matched[:, 0:geometry_size],
                 target[:, 0:geometry_size]
             )
-            if reconstruction_unmatched.shape[0] > 0: # regress dimension of unmatched to zero
+            if REGRESS_UNMATCHED_DIM and reconstruction_unmatched.shape[0] > 0: # regress dimension of unmatched to zero
                 losses[0] += geometric_weight * geometric_loss(
                     reconstruction_unmatched[:, 2:4],
                     torch.zeros_like(reconstruction_unmatched[:, 2:4])

@@ -35,8 +35,8 @@ ax.plot(
     np.arange(num_epochs),
     logs["shape_loss"],
     "#6759ff",
-    smoothed_loss_41,
-    "#2a9edd"
+    # smoothed_loss_41,
+    # "#2a9edd"
 )
 
 ax.grid()

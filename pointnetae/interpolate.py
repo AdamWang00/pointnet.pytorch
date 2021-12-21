@@ -17,10 +17,11 @@ from deep_sdf.mesh_color import create_mesh
 # ========== BEGIN PARAMS ==========
 
 IS_TESTING = True
+SKIP = False
 ROOM_IDX_1 = 4
 ROOM_IDX_2 = 44
-NUM_INTERPOLATIONS = 12
-DEEPSDF_SAMPLING_DIM = 256 # = N, results in N^3 samples
+NUM_INTERPOLATIONS = 16
+DEEPSDF_SAMPLING_DIM = 128 # = N, results in N^3 samples
 
 ORI_CLIP_THRESHOLD = 0.9
 
@@ -106,14 +107,13 @@ for i in range(NUM_INTERPOLATIONS):
     os.makedirs(os.path.join(interpolations_dir, str(i)), exist_ok=True)
     furniture_infos_filepath = os.path.join(interpolations_dir, str(i), "info.json")
 
-    if os.path.isfile(furniture_infos_filepath):
+    if SKIP and os.path.isfile(furniture_infos_filepath):
         print("Interpolation #" + str(i) + " already exists, skipping")
         continue
 
-    print("Interpolating room #" + str(i))
-    
     latent2_weight = i / (NUM_INTERPOLATIONS - 1)
     latent1_weight = 1 - latent2_weight
+    print(f"Interpolating room #{str(i)} ({latent1_weight} - {latent2_weight})")
 
     latent_code = latent1 * latent1_weight + latent2 * latent2_weight
     latent_code = latent_code.unsqueeze(0)
@@ -122,12 +122,8 @@ for i in range(NUM_INTERPOLATIONS):
     latent_code = latent_code[0]
     interpolation = interpolation.detach().cpu()
 
-    areas = interpolation[:, 2] * interpolation[:, 3]
-    indices_area_descending = np.argsort(-areas)
-    interpolation = interpolation[indices_area_descending]
-
     furniture_info_list = []
-    for idx, r in zip(indices_area_descending.tolist(), interpolation.tolist()):
+    for r in interpolation.tolist():
         pos = r[0:2]
         dim = r[2:4]
         ori = r[4:6]
@@ -146,7 +142,7 @@ for i in range(NUM_INTERPOLATIONS):
         decode_shape_input = torch.cat(
             (
                 latent_code,
-                interpolation[idx, 0:geometry_size+orientation_size].cuda()
+                r[0:geometry_size+orientation_size]
             )
         )
         shape_code = model.decode_shape(decode_shape_input, cat_idx)
