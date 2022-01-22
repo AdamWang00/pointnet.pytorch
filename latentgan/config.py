@@ -1,4 +1,4 @@
-model_name = "bedroom_latent5a"
+model_name = "bedroom_latent_ori1"
 iter_load = "200000"
 print("latentgan", model_name, iter_load)
 
@@ -105,6 +105,18 @@ params_history = {
         "hidden_dims_g": [512, 512, 512, 512],
         "hidden_dims_d": [512, 512, 512, 512]
     },
+    "bedroom_latent_ori1": {
+        "ae_model_class": "pointnetae",
+        "ae_model_name": "bedroom_ori1",
+        "ae_epoch_load": "latest",
+        "generator_iters": 200000,
+        "batch_size": 64,
+        "learning_rate_g": 0.0001,
+        "learning_rate_d": 0.0001,
+        "z_dim": 256,
+        "hidden_dims_g": [512, 512, 512, 512],
+        "hidden_dims_d": [512, 512, 512, 512]
+    }
 }
 
 params = params_history[model_name]

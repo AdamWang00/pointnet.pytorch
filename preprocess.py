@@ -8,9 +8,13 @@ import torch
 SAVE = True
 
 room_type = "Bedroom" # name of room in 3D-FRONT
-room_name = "Bedroom2" # name of subdirectory to save to
+room_name = "Bedroom3" # name of subdirectory to save to
+
+orient_to = 'bed' # each room will be rotated such that the first instance of this super_category (e.g. 'bed') is oriented consistently. if no such instance, the room is not included. default: None
 
 super_categories = {'bed', 'cabinet', 'chair', 'largeSofa', 'largeTable', 'nightstand', 'smallStool', 'smallTable', 'tvStand'}
+
+assert orient_to is None or orient_to in super_categories
 
 deepsdf_experiments_dir = "../DeepSDF/experiments"
 deepsdf_latent_code_subpaths = {
@@ -32,6 +36,7 @@ data_dir = "./data"
 rooms_subdir = "Rooms"
 roominfos_subdir = "RoomInfos"
 
+# TODO: read notes.txt in /home/awang156/data and add new categories and categories that have multiple names (e.g. wine cooler, wine cabinet)
 model_category_to_super_category = {'armchair': 'chair', 'Lounge Chair / Cafe Chair / Office Chair': 'chair', 'Pendant Lamp': 'lighting', 'Coffee Table': 'largeTable', 'Corner/Side Table': 'smallTable', 'Dining Table': 'largeTable', 'King-size Bed': 'bed', 'Nightstand': 'nightstand', 'Bookcase / jewelry Armoire': 'cabinet', 'Three-Seat / Multi-set sofa': 'largeSofa', 'TV Stand': 'tvStand', 'Drawer Chest / Corner cabinet': 'cabinet', 'Wardrobe': 'cabinet', 'Footstool / Sofastool / Bed End Stool / Stool': 'smallStool', 'Sideboard / Side Cabinet / Console': 'cabinet', 'Ceiling Lamp': 'lighting', 'Children Cabinet': 'cabinet', 'Bed Frame': 'bed', 'Round End Table': 'smallTable', 'Desk': 'largeTable', 'Single bed': 'bed', 'Loveseat Sofa': 'largeSofa', 'Dining Chair': 'chair', 'Barstool': 'chair', 'Lazy Sofa': 'chair', 'L-shaped Sofa': 'largeSofa', 'Wine Cooler': 'cabinet', 'Dressing Table': 'largeTable', 'Dressing Chair': 'chair', 'Kids Bed': 'bed', 'Classic Chinese Chair': 'chair', 'Bunk Bed': 'bed', 'Chaise Longue Sofa': 'largeSofa', 'Shelf': 'cabinet', '衣帽架': 'other', '脚凳/墩': 'other', '博古架': 'other', '置物架': 'other', '装饰架': 'other'}
 
 # ========== END PARAMS ==========
@@ -100,6 +105,15 @@ def quaternion_to_orientation(qua, axis = np.array([0, 0, 1])):
     """
     rotMatrix = quaternion_to_matrix(qua)
     return clip_orientation(vector_dot_matrix3(axis, rotMatrix), threshold=0.8)
+
+def rotate_furniture(furniture_arr, rot_angle):
+    # to rotate each furniture in the arr, we modify pos and ori, NOT dim (since dims are relative to furniture ori, not world ori)
+    c, s = np.cos(rot_angle), np.sin(rot_angle)
+    j = np.matrix([[c, s], [-s, c]])
+    new_pos = np.dot(j, furniture_arr[:, 0:2].T).T
+    new_ori = np.dot(j, furniture_arr[:, 4:6].T).T
+    furniture_arr[:, 0:2] = new_pos
+    furniture_arr[:, 4:6] = new_ori
 
 deepsdf_latent_codes = {} # model_id -> np.array
 for super_category in super_categories:
@@ -191,61 +205,79 @@ for scene_filename in scene_filenames:
 
     room_count_scene = 0 # count of rooms in this scene with type == room_type and at least 1 furniture in furniture_dict
     for room in scene_json["scene"]["room"]:
-        if room["type"] == room_type:
-            furniture_list = []
-            model_id_list = []
-            for child in room["children"]: # parts of the room, includes layout and furniture
-                ref = child["ref"]
-                if ref in furniture_dict:
-                    furniture = furniture_dict[ref]
-                    # ignore models that were not part of deepsdf training, as they do not have latent code
-                    if furniture['jid'] not in deepsdf_latent_codes:
-                        continue
+        if room["type"] != room_type:
+            continue
 
-                    pos = child["pos"]
-                    dim = np.array(child["scale"]) * np.array(furniture["bbox"])
-                    ori = quaternion_to_orientation(child["rot"])
-                    cat = categories_dict[furniture["category"]]
-                    categories_count_dict_room[furniture["category"]] += 1
-                    shape_code = deepsdf_latent_codes[furniture["jid"]]
-
-                    f = np.zeros(6 + 1 + 512) # 4 geo, 2 ori, 1 cat, 512 shape
-                    f[0:6] = [pos[0], pos[2], dim[0], dim[2], ori[0], ori[2]]
-                    f[6] = cat
-                    f[7:] = shape_code
-                    furniture_list.append(f)
-                    model_id_list.append(furniture['jid'])
-            
-            furniture_count_room = len(furniture_list)
-            if furniture_count_room == 0:
+        if orient_to is not None:
+            f_orient_to = None
+        furniture_list = []
+        model_id_list = []
+        for child in room["children"]: # parts of the room, including layout and furniture
+            ref = child["ref"]
+            if ref not in furniture_dict:
                 continue
 
-            room_count_scene += 1
-            furniture_count += furniture_count_room
-            max_furniture_count = max(max_furniture_count, furniture_count_room)
-            furniture_arr = np.array(furniture_list)
+            furniture = furniture_dict[ref]
+            # ignore models that were not part of deepsdf training, as they do not have latent code
+            if furniture['jid'] not in deepsdf_latent_codes:
+                continue
 
-            # center room around average of furniture positions
-            pos_avg = np.average(furniture_arr[:, 0:2], axis=0)
-            furniture_arr[:, 0:2] -= pos_avg
+            pos = child["pos"]
+            dim = np.array(child["scale"]) * np.array(furniture["bbox"])
+            ori = quaternion_to_orientation(child["rot"])
+            cat = categories_dict[furniture["category"]]
+            categories_count_dict_room[furniture["category"]] += 1
+            shape_code = deepsdf_latent_codes[furniture["jid"]]
 
-            furniture_list = furniture_arr.tolist() # use to create furniture_info_list
-            furniture_info_list = []
-            for i in range(len(model_id_list)):
-                f = furniture_list[i]
-                furniture_info_list.append({
-                    "id": model_id_list[i],
-                    "pos": [f[0], f[1]],
-                    "dim": [f[2], f[3]],
-                    "ori": [f[4], f[5]],
-                    "cat": int(f[6])
-                })
-            
-            if SAVE:
-                room_filename = os.path.splitext(scene_filename)[0] + "_" + str(room_count_scene)
-                np.save(os.path.join(rooms_dir, room_filename + ".npy"), furniture_arr)
-                with open(os.path.join(roominfos_dir, room_filename + ".json"), "w") as f:
-                    json.dump(furniture_info_list, f)
+            f = np.zeros(6 + 1 + 512) # 4 geo, 2 ori, 1 cat, 512 shape
+            f[0:6] = [pos[0], pos[2], dim[0], dim[2], ori[0], ori[2]]
+            f[6] = cat
+            f[7:] = shape_code
+            furniture_list.append(f)
+            model_id_list.append(furniture['jid'])
+
+            if orient_to is not None and furniture["category"] == orient_to and f_orient_to is None:
+                f_orient_to = f
+        
+        furniture_count_room = len(furniture_list)
+        if furniture_count_room == 0:
+            continue
+
+        if orient_to is not None and f_orient_to is None:
+            continue
+
+        room_count_scene += 1
+        furniture_count += furniture_count_room
+        max_furniture_count = max(max_furniture_count, furniture_count_room)
+        furniture_arr = np.array(furniture_list)
+
+        # center room around average of furniture positions
+        pos_avg = np.average(furniture_arr[:, 0:2], axis=0)
+        furniture_arr[:, 0:2] -= pos_avg
+
+        # re-orient room around f_orient_to
+        if orient_to is not None:
+            f_ori = f_orient_to[4:6]
+            rot_angle = -np.arctan2(f_ori[0], f_ori[1])
+            rotate_furniture(furniture_arr, rot_angle)
+
+        furniture_list = furniture_arr.tolist() # use to create furniture_info_list
+        furniture_info_list = []
+        for i in range(len(model_id_list)):
+            f = furniture_list[i]
+            furniture_info_list.append({
+                "id": model_id_list[i],
+                "pos": [f[0], f[1]],
+                "dim": [f[2], f[3]],
+                "ori": [f[4], f[5]],
+                "cat": int(f[6])
+            })
+        
+        if SAVE:
+            room_filename = os.path.splitext(scene_filename)[0] + "_" + str(room_count_scene)
+            np.save(os.path.join(rooms_dir, room_filename + ".npy"), furniture_arr)
+            with open(os.path.join(roominfos_dir, room_filename + ".json"), "w") as f:
+                json.dump(furniture_info_list, f)
 
     room_count += room_count_scene
 

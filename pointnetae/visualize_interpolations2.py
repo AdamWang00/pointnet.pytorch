@@ -8,8 +8,8 @@ from pointnetae.config import *
 
 IS_TESTING = True
 ROOM_IDX_1 = 4
-ROOM_IDX_2 = 44
-FPS = 4
+ROOM_IDX_2 = 43
+FPS = 16
 
 SAVE_GIF = False
 SAVE_GIF_PATH = "/home/awang/Desktop/interpolation.gif"

@@ -18,9 +18,9 @@ from deep_sdf.mesh_color import create_mesh
 IS_TESTING = True
 INCLUDE_GT_SHAPE_CODE_RECONSTRUCTION = True
 SKIP = False
-NUM_RECONSTRUCTIONS = 1
-DATASET_OFFSET = 44
-DEEPSDF_SAMPLING_DIM = 128 # = N, results in N^3 samples
+NUM_RECONSTRUCTIONS = 8
+DATASET_OFFSET = 0
+DEEPSDF_SAMPLING_DIM = 256 # = N, results in N^3 samples
 
 ORI_CLIP_THRESHOLD = 0.9
 

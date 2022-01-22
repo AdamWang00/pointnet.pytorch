@@ -55,7 +55,7 @@ def draw_generated_scene(generated_scene):
     areas = generated_scene[:, 2] * generated_scene[:, 3]
     indices_area_descending = np.argsort(-areas)
     generated_scene = generated_scene[indices_area_descending]
-    for idx, r in enumerate(generated_scene.squeeze().tolist()):
+    for idx, r in zip(indices_area_descending.tolist(), generated_scene.squeeze().tolist()):
         pos = r[0:2]
         dim = r[2:4]
         ori = r[4:6]

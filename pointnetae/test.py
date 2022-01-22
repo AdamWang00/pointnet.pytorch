@@ -8,8 +8,8 @@ from pointnetae.config import *
 from pointnetae.utils import *
 from pointnetae.dataset import SceneDataset
 
-IS_TESTING = True
-HIDE_NONEXISTENT_OUTPUTS = False
+IS_TESTING = False
+HIDE_NONEXISTENT_OUTPUTS = True
 NUM_TESTS = 8
 DATASET_OFFSET = 0
 
@@ -167,6 +167,6 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_TESTS):
         draw.line([box_center, ori_indicator], fill='white')
 
         box_label_nw = (box_nw[0] + 2, box_nw[1] + 2)
-        draw.text(box_label_nw, f'{idx}', fill=(200,200,200), font=font)
+        draw.text(box_label_nw, f'{idx}', fill=(255,255,255), font=font)
 
     img.show()

@@ -9,7 +9,7 @@ from pointnetae.dataset import SceneDataset
 
 # from torch.utils.data.dataloader import default_collate # for batching input scenes
 
-REGRESS_UNMATCHED_DIM = True # regress dim of unmatched predictions to 0
+REGRESS_UNMATCHED_DIM = True # regress dim of unmatched predictions to 0 (improves stability)
 
 NUM_EPOCHS = num_epochs
 BATCH_SIZE = batch_size

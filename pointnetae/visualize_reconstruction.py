@@ -9,8 +9,8 @@ from pointnetae.dataset import SceneDataset
 
 IS_TESTING = True
 INCLUDE_GT_SHAPE_CODE_RECONSTRUCTION = True
-NUM_RECONSTRUCTIONS = 1
-DATASET_OFFSET = 44
+NUM_RECONSTRUCTIONS = 8
+DATASET_OFFSET = 0
 
 viewport_w = 1600
 viewport_h = 900

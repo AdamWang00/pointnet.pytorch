@@ -19,8 +19,8 @@ from deep_sdf.mesh_color import create_mesh
 IS_TESTING = True
 SKIP = False
 ROOM_IDX_1 = 4
-ROOM_IDX_2 = 44
-NUM_INTERPOLATIONS = 16
+ROOM_IDX_2 = 43
+NUM_INTERPOLATIONS = 64
 DEEPSDF_SAMPLING_DIM = 128 # = N, results in N^3 samples
 
 ORI_CLIP_THRESHOLD = 0.9
@@ -142,7 +142,7 @@ for i in range(NUM_INTERPOLATIONS):
         decode_shape_input = torch.cat(
             (
                 latent_code,
-                r[0:geometry_size+orientation_size]
+                torch.Tensor(r[0:geometry_size+orientation_size]).cuda()
             )
         )
         shape_code = model.decode_shape(decode_shape_input, cat_idx)
