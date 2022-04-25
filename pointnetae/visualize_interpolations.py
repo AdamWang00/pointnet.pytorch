@@ -86,4 +86,4 @@ camera_pose = np.array([
 ])
 scene.add(camera, pose=camera_pose)
 
-Viewer(scene, use_raymond_lighting=True, viewport_size=(viewport_w,viewport_h), render_flags={"cull_faces": False})
+Viewer(scene, use_raymond_lighting=True, viewport_size=(viewport_w,viewport_h))

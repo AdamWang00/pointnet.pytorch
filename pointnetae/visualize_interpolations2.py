@@ -37,11 +37,13 @@ if IS_TESTING:
 else:
     model_interpolations_subdir = model_training_interpolations_subdir
 interpolations_dir = os.path.join("experiments", model_name, model_interpolations_subdir, epoch_load, f"{ROOM_IDX_1}_to_{ROOM_IDX_2}")
+num_interpolations = len(os.listdir(interpolations_dir))
+print(num_interpolations, "interpolations found")
 
 scene = Scene()
 
 node_lists = [] # contains lists (interpolated scenes) of Nodes (furniture)
-for i in range(1337): # we do not know the number of interpolations, so we loop through each i until invalid
+for i in range(num_interpolations): # we do not know the number of interpolations, so we loop through each i until invalid
     furniture_info_list_interpolation_path = os.path.join(interpolations_dir, str(i), "info.json")
     if not os.path.isfile(furniture_info_list_interpolation_path):
         break
@@ -99,7 +101,7 @@ camera_pose = np.array([
 scene.add(camera, pose=camera_pose)
 
 if SAVE_GIF:
-    viewer = Viewer(scene, use_raymond_lighting=True, viewport_size=(viewport_w,viewport_h), render_flags={"cull_faces": False}, run_in_thread=True, record=True)
+    viewer = Viewer(scene, use_raymond_lighting=True, viewport_size=(viewport_w,viewport_h), run_in_thread=True, record=True)
 
     viewer.render_lock.acquire()
     for mesh_node in node_lists[0]:
@@ -120,7 +122,7 @@ if SAVE_GIF:
     viewer.close_external()
     viewer.save_gif(SAVE_GIF_PATH)
 else:
-    viewer = Viewer(scene, use_raymond_lighting=True, viewport_size=(viewport_w,viewport_h), render_flags={"cull_faces": False}, run_in_thread=True)
+    viewer = Viewer(scene, use_raymond_lighting=True, viewport_size=(viewport_w,viewport_h), run_in_thread=True)
 
     while True:
         viewer.render_lock.acquire()

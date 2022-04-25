@@ -11,7 +11,8 @@ from pointnetae.dataset import SceneDataset
 # from PIL import Image, ImageDraw, ImageFont
 
 import deep_sdf
-from networks.deep_sdf_decoder_color import Decoder
+# from networks.deep_sdf_decoder_color import Decoder
+from networks.deep_sdf_decoder_color_coarse import Decoder
 from deep_sdf.mesh_color import create_mesh
 
 # ========== BEGIN PARAMS ==========
@@ -22,35 +23,9 @@ ROOM_IDX_1 = 4
 ROOM_IDX_2 = 43
 NUM_INTERPOLATIONS = 64
 DEEPSDF_SAMPLING_DIM = 128 # = N, results in N^3 samples
+BBOX_FACTOR = 1.01  # samples from BBOX_FACTOR times the bounding box size
 
 ORI_CLIP_THRESHOLD = 0.9
-
-# THESE MUST REFERENCE THE MODELS WHOSE LATENT CODES ARE USED DURING PREPROCESSING
-deepsdf_model_spec_subpaths = {
-    "bed": "bed1/specs.json",
-    "cabinet": "cabinet1/specs.json",
-    "chair": "chair1/specs.json",
-    "largeSofa": "largeSofa1/specs.json",
-    "largeTable": "largeTable1/specs.json",
-    "nightstand": "nightstand1/specs.json",
-    "smallStool": "smallStool1/specs.json",
-    "smallTable": "smallTable1/specs.json",
-    "tvStand": "tvStand1/specs.json",
-}
-deepsdf_model_param_subpaths = {
-    "bed": "bed1/ModelParameters/1000.pth",
-    "cabinet": "cabinet1/ModelParameters/1000.pth",
-    "chair": "chair1/ModelParameters/1000.pth",
-    "largeSofa": "largeSofa1/ModelParameters/1000.pth",
-    "largeTable": "largeTable1/ModelParameters/1000.pth",
-    "nightstand": "nightstand1/ModelParameters/1000.pth",
-    "smallStool": "smallStool1/ModelParameters/1000.pth",
-    "smallTable": "smallTable1/ModelParameters/1000.pth",
-    "tvStand": "tvStand1/ModelParameters/1000.pth",
-}
-
-deepsdf_experiments_dir = "../../DeepSDF"
-deepsdf_experiments_dir = os.path.join(deepsdf_experiments_dir, "experiments")
 
 # ========== END PARAMS ==========
 
@@ -124,9 +99,9 @@ for i in range(NUM_INTERPOLATIONS):
 
     furniture_info_list = []
     for r in interpolation.tolist():
-        pos = r[0:2]
-        dim = r[2:4]
-        ori = r[4:6]
+        pos = r[0:position_size]
+        dim = r[position_size:position_size+dimension_size]
+        ori = r[geometry_size:geometry_size+orientation_size]
         ori = clip_orientation(ori / np.linalg.norm(ori), threshold=ORI_CLIP_THRESHOLD)
         cat_idx = np.argmax(r[geometry_size+orientation_size:geometry_size+orientation_size+num_categories])
         cat = categories_reverse_dict[str(cat_idx)]
@@ -153,6 +128,7 @@ for i in range(NUM_INTERPOLATIONS):
                 shape_code,
                 mesh_filepath,
                 N=DEEPSDF_SAMPLING_DIM,
+                bbox_factor=BBOX_FACTOR,
                 max_batch=int(2 ** 17),
             )
 

@@ -1,7 +1,7 @@
 import os
 import json
 
-room_name = "Bedroom3"
+room_name = "Bedroom4"
 split_subdir_name = "test64"
 testing_size = 64
 

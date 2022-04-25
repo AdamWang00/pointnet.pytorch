@@ -49,9 +49,16 @@ for i in range(OFFSET, OFFSET + NUM_GENERATIONS):
 
             # scale
             bbox_dim = gen_mesh.bounding_box.extents
-            scale_x = dim[0] / bbox_dim[0]
-            scale_z = dim[1] / bbox_dim[2]
-            scale_y = (scale_x + scale_z) / 2 # todo: use y dim
+            if dimension_size == 2:
+                scale_x = dim[0] / bbox_dim[0]
+                scale_z = dim[1] / bbox_dim[2]
+                scale_y = (scale_x + scale_z) / 2
+            elif dimension_size == 3:
+                scale_x = dim[0] / bbox_dim[0]
+                scale_y = dim[1] / bbox_dim[1]
+                scale_z = dim[2] / bbox_dim[2]
+            else:
+                raise Exception
             gen_mesh.apply_scale((scale_x, scale_y, scale_z))
 
             # rotate
@@ -60,7 +67,12 @@ for i in range(OFFSET, OFFSET + NUM_GENERATIONS):
             gen_mesh.apply_transform(trimesh.transformations.rotation_matrix(angle, y_axis))
 
             # translate
-            gen_mesh.apply_translation((pos[0], scale_y * bbox_dim[1] / 2, pos[1])) # todo: use y pos
+            if position_size == 2:
+                gen_mesh.apply_translation((pos[0], scale_y * bbox_dim[1] / 2, pos[1]))
+            elif position_size == 3:
+                gen_mesh.apply_translation((pos[0], dim[1] / 2 + pos[1], pos[2]))
+            else:
+                raise Exception
 
             scene.add_node(Node(mesh=Mesh.from_trimesh(gen_mesh, smooth=False), translation=[0, 0, 0]))
         except ValueError as e:
@@ -76,4 +88,4 @@ for i in range(OFFSET, OFFSET + NUM_GENERATIONS):
     ])
     scene.add(camera, pose=camera_pose)
 
-    Viewer(scene, use_raymond_lighting=True, viewport_size=(viewport_w,viewport_h), render_flags={"cull_faces": False})
+    Viewer(scene, use_raymond_lighting=True, viewport_size=(viewport_w,viewport_h))

@@ -1,5 +1,4 @@
 import sys
-
 sys.path.insert(0, "/home/awang156/DeepSDF")
 import os
 import torch
@@ -13,41 +12,17 @@ elif ae_model_class == "pointnetae":
     from latentgan.model import PointNetAE
 
 import deep_sdf
-from networks.deep_sdf_decoder_color import Decoder
+# from networks.deep_sdf_decoder_color import Decoder
+from networks.deep_sdf_decoder_color_coarse import Decoder
 from deep_sdf.mesh_color import create_mesh
 
 # ========== BEGIN PARAMS ==========
 
 NUM_GENERATIONS = 8
-ORI_CLIP_THRESHOLD = 0.9
 DEEPSDF_SAMPLING_DIM = 256 # = N, results in N^3 samples
+BBOX_FACTOR = 1.01  # samples from BBOX_FACTOR times the bounding box size
 
-# THESE MUST REFERENCE THE MODELS WHOSE LATENT CODES ARE USED DURING PREPROCESSING
-deepsdf_model_spec_subpaths = {
-    "bed": "bed1/specs.json",
-    "cabinet": "cabinet1/specs.json",
-    "chair": "chair1/specs.json",
-    "largeSofa": "largeSofa1/specs.json",
-    "largeTable": "largeTable1/specs.json",
-    "nightstand": "nightstand1/specs.json",
-    "smallStool": "smallStool1/specs.json",
-    "smallTable": "smallTable1/specs.json",
-    "tvStand": "tvStand1/specs.json",
-}
-deepsdf_model_param_subpaths = {
-    "bed": "bed1/ModelParameters/1000.pth",
-    "cabinet": "cabinet1/ModelParameters/1000.pth",
-    "chair": "chair1/ModelParameters/1000.pth",
-    "largeSofa": "largeSofa1/ModelParameters/1000.pth",
-    "largeTable": "largeTable1/ModelParameters/1000.pth",
-    "nightstand": "nightstand1/ModelParameters/1000.pth",
-    "smallStool": "smallStool1/ModelParameters/1000.pth",
-    "smallTable": "smallTable1/ModelParameters/1000.pth",
-    "tvStand": "tvStand1/ModelParameters/1000.pth",
-}
-
-deepsdf_experiments_dir = "../../DeepSDF"
-deepsdf_experiments_dir = os.path.join(deepsdf_experiments_dir, "experiments")
+ORI_CLIP_THRESHOLD = 0.9
 
 # ========== END PARAMS ==========
 
@@ -85,15 +60,16 @@ if __name__ == "__main__":
         specs_filename = os.path.join(deepsdf_experiments_dir, deepsdf_model_spec_subpaths[category])
         specs = json.load(open(specs_filename))
         latent_size = specs["CodeLength"]
-        if specs["NetworkArch"] == "deep_sdf_decoder_color":
+        if specs["NetworkArch"] == "deep_sdf_decoder_color_coarse":
             decoder = Decoder(latent_size, **specs["NetworkSpecs"])
         else:
             raise Exception("unrecognized deepsdf decoder arch")
-        decoder = torch.nn.DataParallel(decoder)
+        # decoder = torch.nn.DataParallel(decoder)
         params_filename = os.path.join(deepsdf_experiments_dir, deepsdf_model_param_subpaths[category])
         saved_model_state = torch.load(params_filename)
         decoder.load_state_dict(saved_model_state["model_state_dict"])
-        decoder = decoder.module.cuda()
+        # decoder = decoder.module.cuda()
+        decoder = decoder.cuda()
         decoder.eval()
         decoders.append(decoder)
 
@@ -135,9 +111,9 @@ if __name__ == "__main__":
 
         furniture_info_list = []
         for idx, r in zip(indices_area_descending.tolist(), generation.tolist()):
-            pos = r[0:2]
-            dim = r[2:4]
-            ori = r[4:6]
+            pos = r[0:position_size]
+            dim = r[position_size:position_size+dimension_size]
+            ori = r[geometry_size:geometry_size+orientation_size]
             ori = clip_orientation(ori / np.linalg.norm(ori), threshold=ORI_CLIP_THRESHOLD)
             cat_idx = np.argmax(r[geometry_size+orientation_size:geometry_size+orientation_size+num_categories])
             cat = categories_reverse_dict[str(cat_idx)]
@@ -164,6 +140,7 @@ if __name__ == "__main__":
                     shape_code,
                     mesh_filepath,
                     N=DEEPSDF_SAMPLING_DIM,
+                    bbox_factor=BBOX_FACTOR,
                     max_batch=int(2 ** 17),
                 )
 

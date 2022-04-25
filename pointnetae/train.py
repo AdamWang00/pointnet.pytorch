@@ -75,8 +75,8 @@ for epoch in range(NUM_EPOCHS):
             reconstruction = reconstruction_batch[0]
             latent_code = latent_code_batch[0]
 
-            cost_mat_position = get_cost_matrix_2d(reconstruction[:, 0:2], target[:, 0:2])
-            cost_mat_dimension = get_cost_matrix_2d(reconstruction[:, 2:4], target[:, 2:4])
+            cost_mat_position = get_cost_matrix_2d(reconstruction[:, 0:position_size], target[:, 0:position_size])
+            cost_mat_dimension = get_cost_matrix_2d(reconstruction[:, position_size:position_size+dimension_size], target[:, position_size:position_size+dimension_size])
             cost_mat = cost_mat_position + dimensions_matching_weight * cost_mat_dimension
             cost_mat = cost_mat.detach().cpu()
             target_ind, matched_ind, unmatched_ind = get_assignment_problem_matchings(cost_mat)
@@ -95,8 +95,8 @@ for epoch in range(NUM_EPOCHS):
             )
             if REGRESS_UNMATCHED_DIM and reconstruction_unmatched.shape[0] > 0: # regress dimension of unmatched to zero
                 losses[0] += geometric_weight * geometric_loss(
-                    reconstruction_unmatched[:, 2:4],
-                    torch.zeros_like(reconstruction_unmatched[:, 2:4])
+                    reconstruction_unmatched[:, position_size:position_size+dimension_size],
+                    torch.zeros_like(reconstruction_unmatched[:, position_size:position_size+dimension_size])
                 )
             # Orientation
             losses[1] += orientation_weight * orientation_loss(

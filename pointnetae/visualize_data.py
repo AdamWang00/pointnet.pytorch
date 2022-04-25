@@ -8,7 +8,7 @@ from pointnetae.config import *
 from pointnetae.dataset import SceneDataset
 
 IS_TESTING = True
-NUM_RECONSTRUCTIONS = 64
+NUM_VISUALIZATIONS = 64
 DATASET_OFFSET = 0
 
 viewport_w = 900
@@ -35,7 +35,7 @@ roominfos_dir = os.path.join(base_dir, roominfos_subdir)
 
 scene_dataset = SceneDataset(rooms_dir, max_num_points, is_testing=IS_TESTING)
 
-for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
+for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_VISUALIZATIONS):
     room_id = scene_dataset.get_room_id(i)
     print(i, room_id)
 
@@ -53,8 +53,8 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
         ori = furniture_info_gt["ori"]
         # cat = furniture_info_gt["cat"]
 
-        gt_path = os.path.join('../../data/3D-FUTURE-model/all', model_id, 'normalized_model.obj')
-        gt_texture_path = os.path.join('../../data/3D-FUTURE-model/all', model_id, 'texture.png')
+        gt_path = os.path.join(gt_models_path, model_id, 'normalized_model.obj')
+        gt_texture_path = os.path.join(gt_models_path, model_id, 'texture.png')
         
         try:
             gt_mesh, gt_uv = get_trimesh_and_uv(trimesh.load(gt_path, process=False))
@@ -90,4 +90,4 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
     ])
     scene.add(camera, pose=camera_pose)
 
-    Viewer(scene, use_raymond_lighting=True, viewport_size=(viewport_w,viewport_h), render_flags={"cull_faces": False})
+    Viewer(scene, use_raymond_lighting=True, viewport_size=(viewport_w,viewport_h))

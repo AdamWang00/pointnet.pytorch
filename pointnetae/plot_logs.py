@@ -41,3 +41,4 @@ ax.plot(
 
 ax.grid()
 plt.show()
+# plt.savefig("logs.png")

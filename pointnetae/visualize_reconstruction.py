@@ -68,8 +68,8 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
         ori = furniture_info_gt["ori"]
         # cat = furniture_info_gt["cat"]
 
-        gt_path = os.path.join('../../data/3D-FUTURE-model/all', model_id, 'normalized_model.obj')
-        gt_texture_path = os.path.join('../../data/3D-FUTURE-model/all', model_id, 'texture.png')
+        gt_path = os.path.join(gt_models_path, model_id, 'normalized_model.obj')
+        gt_texture_path = os.path.join(gt_models_path, model_id, 'texture.png')
         
         try:
             gt_mesh, gt_uv = get_trimesh_and_uv(trimesh.load(gt_path, process=False))
@@ -78,9 +78,16 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
 
             # scale
             bbox_dim = gt_mesh.bounding_box.extents
-            scale_x = dim[0] / bbox_dim[0]
-            scale_z = dim[1] / bbox_dim[2]
-            scale_y = (scale_x + scale_z) / 2 # todo: use y dim
+            if dimension_size == 2:
+                scale_x = dim[0] / bbox_dim[0]
+                scale_z = dim[1] / bbox_dim[2]
+                scale_y = (scale_x + scale_z) / 2
+            elif dimension_size == 3:
+                scale_x = dim[0] / bbox_dim[0]
+                scale_y = dim[1] / bbox_dim[1]
+                scale_z = dim[2] / bbox_dim[2]
+            else:
+                raise Exception
             gt_mesh.apply_scale((scale_x, scale_y, scale_z))
 
             # rotate
@@ -89,7 +96,12 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
             gt_mesh.apply_transform(trimesh.transformations.rotation_matrix(angle, y_axis))
 
             # translate
-            gt_mesh.apply_translation((pos[0], scale_y * bbox_dim[1] / 2, pos[1])) # todo: use y pos
+            if position_size == 2:
+                gt_mesh.apply_translation((pos[0], scale_y * bbox_dim[1] / 2, pos[1]))
+            elif position_size == 3:
+                gt_mesh.apply_translation((pos[0], dim[1] / 2 + pos[1], pos[2]))
+            else:
+                raise Exception
 
             scene.add_node(Node(mesh=Mesh.from_trimesh(gt_mesh, smooth=False), translation=[-gap_size, 0, 0]))
         except ValueError as e:
@@ -111,9 +123,16 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
             
             # scale
             bbox_dim = gen_mesh.bounding_box.extents
-            scale_x = dim[0] / bbox_dim[0]
-            scale_z = dim[1] / bbox_dim[2]
-            scale_y = (scale_x + scale_z) / 2 # todo: use y dim
+            if dimension_size == 2:
+                scale_x = dim[0] / bbox_dim[0]
+                scale_z = dim[1] / bbox_dim[2]
+                scale_y = (scale_x + scale_z) / 2
+            elif dimension_size == 3:
+                scale_x = dim[0] / bbox_dim[0]
+                scale_y = dim[1] / bbox_dim[1]
+                scale_z = dim[2] / bbox_dim[2]
+            else:
+                raise Exception
             gen_mesh.apply_scale((scale_x, scale_y, scale_z))
 
             # rotate
@@ -122,7 +141,12 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
             gen_mesh.apply_transform(trimesh.transformations.rotation_matrix(angle, y_axis))
 
             # translate
-            gen_mesh.apply_translation((pos[0], scale_y * bbox_dim[1] / 2, pos[1])) # todo: use y pos
+            if position_size == 2:
+                gen_mesh.apply_translation((pos[0], scale_y * bbox_dim[1] / 2, pos[1]))
+            elif position_size == 3:
+                gen_mesh.apply_translation((pos[0], dim[1] / 2 + pos[1], pos[2]))
+            else:
+                raise Exception
 
             scene.add_node(Node(mesh=Mesh.from_trimesh(gen_mesh, smooth=False), translation=[gap_size, 0, 0]))
         except ValueError as e:
@@ -137,9 +161,16 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
 
                 # scale
                 bbox_dim = gen_mesh.bounding_box.extents
-                scale_x = dim[0] / bbox_dim[0]
-                scale_z = dim[1] / bbox_dim[2]
-                scale_y = (scale_x + scale_z) / 2 # todo: use y dim
+                if dimension_size == 2:
+                    scale_x = dim[0] / bbox_dim[0]
+                    scale_z = dim[1] / bbox_dim[2]
+                    scale_y = (scale_x + scale_z) / 2
+                elif dimension_size == 3:
+                    scale_x = dim[0] / bbox_dim[0]
+                    scale_y = dim[1] / bbox_dim[1]
+                    scale_z = dim[2] / bbox_dim[2]
+                else:
+                    raise Exception
                 gen_mesh.apply_scale((scale_x, scale_y, scale_z))
 
                 # rotate
@@ -148,7 +179,12 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
                 gen_mesh.apply_transform(trimesh.transformations.rotation_matrix(angle, y_axis))
 
                 # translate
-                gen_mesh.apply_translation((pos[0], scale_y * bbox_dim[1] / 2, pos[1])) # todo: use y pos
+                if position_size == 2:
+                    gen_mesh.apply_translation((pos[0], scale_y * bbox_dim[1] / 2, pos[1]))
+                elif position_size == 3:
+                    gen_mesh.apply_translation((pos[0], dim[1] / 2 + pos[1], pos[2]))
+                else:
+                    raise Exception
 
                 scene.add_node(Node(mesh=Mesh.from_trimesh(gen_mesh, smooth=False), translation=[0, 0, 0]))
             except ValueError as e:
@@ -164,4 +200,4 @@ for i in range(DATASET_OFFSET, DATASET_OFFSET + NUM_RECONSTRUCTIONS):
     ])
     scene.add(camera, pose=camera_pose)
 
-    Viewer(scene, use_raymond_lighting=True, viewport_size=(viewport_w,viewport_h), render_flags={"cull_faces": False})
+    Viewer(scene, use_raymond_lighting=True, viewport_size=(viewport_w,viewport_h))

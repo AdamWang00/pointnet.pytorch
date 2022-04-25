@@ -8,28 +8,37 @@ import torch
 SAVE = True
 
 room_type = "Bedroom" # name of room in 3D-FRONT
-room_name = "Bedroom3" # name of subdirectory to save to
+room_name = "Bedroom4" # name of subdirectory to save to
 
 orient_to = 'bed' # each room will be rotated such that the first instance of this super_category (e.g. 'bed') is oriented consistently. if no such instance, the room is not included. default: None
 
-super_categories = {'bed', 'cabinet', 'chair', 'largeSofa', 'largeTable', 'nightstand', 'smallStool', 'smallTable', 'tvStand'}
+super_categories = {'bed', 'cabinet', 'chair', 'largeSofa', 'largeTable', 'nightstand', 'smallStool', 'smallTable', 'tvStand', 'lighting'}
 
 assert orient_to is None or orient_to in super_categories
 
+position_size = 3
+dimension_size = 3
+geometry_size = position_size + dimension_size
+orientation_size = 2
+category_size = 1 # just the index of category, not one-hot
+shape_size = 512
+
+deepsdf_ver = 2
 deepsdf_experiments_dir = "../DeepSDF/experiments"
 deepsdf_latent_code_subpaths = {
-    "bed": "bed1/LatentCodes/1000.pth",
-    "cabinet": "cabinet1/LatentCodes/1000.pth",
-    "chair": "chair1/LatentCodes/1000.pth",
-    "largeSofa": "largeSofa1/LatentCodes/1000.pth",
-    "largeTable": "largeTable1/LatentCodes/1000.pth",
-    "nightstand": "nightstand1/LatentCodes/1000.pth",
-    "smallStool": "smallStool1/LatentCodes/1000.pth",
-    "smallTable": "smallTable1/LatentCodes/1000.pth",
-    "tvStand": "tvStand1/LatentCodes/1000.pth",
+    "bed": "bed"+str(deepsdf_ver)+"/LatentCodes/1000.pth",
+    "cabinet": "cabinet"+str(deepsdf_ver)+"/LatentCodes/1000.pth",
+    "chair": "chair"+str(deepsdf_ver)+"/LatentCodes/1000.pth",
+    "largeSofa": "largeSofa"+str(deepsdf_ver)+"/LatentCodes/1000.pth",
+    "largeTable": "largeTable"+str(deepsdf_ver)+"/LatentCodes/1000.pth",
+    "nightstand": "nightstand"+str(deepsdf_ver)+"/LatentCodes/1000.pth",
+    "smallStool": "smallStool"+str(deepsdf_ver)+"/LatentCodes/1000.pth",
+    "smallTable": "smallTable"+str(deepsdf_ver)+"/LatentCodes/1000.pth",
+    "tvStand": "tvStand"+str(deepsdf_ver)+"/LatentCodes/1000.pth",
+    "lighting": "lighting"+str(deepsdf_ver)+"/LatentCodes/1000.pth",
 }
 
-scenes_dir = "../data/3D-FRONT"
+scenes_dir = "/mnt/hdd1/awang_scene_synth/data/3D-FRONT"
 model_info_filepath = "../data/model_info.json"
 
 data_dir = "./data"
@@ -37,7 +46,7 @@ rooms_subdir = "Rooms"
 roominfos_subdir = "RoomInfos"
 
 # TODO: read notes.txt in /home/awang156/data and add new categories and categories that have multiple names (e.g. wine cooler, wine cabinet)
-model_category_to_super_category = {'armchair': 'chair', 'Lounge Chair / Cafe Chair / Office Chair': 'chair', 'Pendant Lamp': 'lighting', 'Coffee Table': 'largeTable', 'Corner/Side Table': 'smallTable', 'Dining Table': 'largeTable', 'King-size Bed': 'bed', 'Nightstand': 'nightstand', 'Bookcase / jewelry Armoire': 'cabinet', 'Three-Seat / Multi-set sofa': 'largeSofa', 'TV Stand': 'tvStand', 'Drawer Chest / Corner cabinet': 'cabinet', 'Wardrobe': 'cabinet', 'Footstool / Sofastool / Bed End Stool / Stool': 'smallStool', 'Sideboard / Side Cabinet / Console': 'cabinet', 'Ceiling Lamp': 'lighting', 'Children Cabinet': 'cabinet', 'Bed Frame': 'bed', 'Round End Table': 'smallTable', 'Desk': 'largeTable', 'Single bed': 'bed', 'Loveseat Sofa': 'largeSofa', 'Dining Chair': 'chair', 'Barstool': 'chair', 'Lazy Sofa': 'chair', 'L-shaped Sofa': 'largeSofa', 'Wine Cooler': 'cabinet', 'Dressing Table': 'largeTable', 'Dressing Chair': 'chair', 'Kids Bed': 'bed', 'Classic Chinese Chair': 'chair', 'Bunk Bed': 'bed', 'Chaise Longue Sofa': 'largeSofa', 'Shelf': 'cabinet', '衣帽架': 'other', '脚凳/墩': 'other', '博古架': 'other', '置物架': 'other', '装饰架': 'other'}
+model_category_to_super_category = {'armchair': 'chair', 'Lounge Chair / Cafe Chair / Office Chair': 'chair', 'Pendant Lamp': 'lighting', 'Coffee Table': 'largeTable', 'Corner/Side Table': 'smallTable', 'Dining Table': 'largeTable', 'King-size Bed': 'bed', 'Nightstand': 'nightstand', 'Bookcase / jewelry Armoire': 'cabinet', 'Three-Seat / Multi-set sofa': 'largeSofa', 'Three-Seat / Multi-seat Sofa': 'largeSofa', 'TV Stand': 'tvStand', 'Drawer Chest / Corner cabinet': 'cabinet', 'Wardrobe': 'cabinet', 'Footstool / Sofastool / Bed End Stool / Stool': 'smallStool', 'Sideboard / Side Cabinet / Console': 'cabinet', 'Sideboard / Side Cabinet / Console Table': 'cabinet', 'Ceiling Lamp': 'lighting', 'Children Cabinet': 'cabinet', 'Bed Frame': 'bed', 'Round End Table': 'smallTable', 'Desk': 'largeTable', 'Single bed': 'bed', 'Loveseat Sofa': 'largeSofa', 'Dining Chair': 'chair', 'Barstool': 'chair', 'Lazy Sofa': 'chair', 'L-shaped Sofa': 'largeSofa', 'Wine Cabinet': 'cabinet', 'Wine Cooler': 'cabinet', 'Dressing Table': 'largeTable', 'Dressing Chair': 'chair', 'Kids Bed': 'bed', 'Classic Chinese Chair': 'chair', 'Bunk Bed': 'bed', 'Chaise Longue Sofa': 'largeSofa', 'Shelf': 'cabinet', '衣帽架': 'other', '脚凳/墩': 'other', '博古架': 'other', '置物架': 'other', '装饰架': 'other'}
 
 # ========== END PARAMS ==========
 
@@ -110,10 +119,18 @@ def rotate_furniture(furniture_arr, rot_angle):
     # to rotate each furniture in the arr, we modify pos and ori, NOT dim (since dims are relative to furniture ori, not world ori)
     c, s = np.cos(rot_angle), np.sin(rot_angle)
     j = np.matrix([[c, s], [-s, c]])
-    new_pos = np.dot(j, furniture_arr[:, 0:2].T).T
-    new_ori = np.dot(j, furniture_arr[:, 4:6].T).T
-    furniture_arr[:, 0:2] = new_pos
-    furniture_arr[:, 4:6] = new_ori
+    if position_size == 2:
+        new_pos = np.dot(j, furniture_arr[:, 0:2].T).T
+        new_ori = np.dot(j, furniture_arr[:, 4:6].T).T
+        furniture_arr[:, 0:2] = new_pos
+        furniture_arr[:, 4:6] = new_ori
+    elif position_size == 3:
+        new_pos = np.dot(j, furniture_arr[:, [0, 2]].T).T # position = (x,y,z), where xz plane is parallel to floor
+        new_ori = np.dot(j, furniture_arr[:, geometry_size:geometry_size+orientation_size].T).T
+        furniture_arr[:, [0, 2]] = new_pos
+        furniture_arr[:, geometry_size:geometry_size+orientation_size] = new_ori
+    else:
+        raise Exception
 
 deepsdf_latent_codes = {} # model_id -> np.array
 for super_category in super_categories:
@@ -133,9 +150,9 @@ for super_category in super_categories:
 
 if SAVE:
     base_dir = os.path.join(data_dir, room_name)
-    if not os.path.isdir(base_dir) or input(f"overwrite {base_dir}? (y)") == "y":
+    if not os.path.isdir(base_dir):
         os.makedirs(base_dir)
-    else:
+    elif not input(f"overwrite {base_dir}? (y)") == "y":
         raise Exception
     rooms_dir = os.path.join(base_dir, rooms_subdir)
     if not os.path.isdir(rooms_dir):
@@ -229,10 +246,22 @@ for scene_filename in scene_filenames:
             categories_count_dict_room[furniture["category"]] += 1
             shape_code = deepsdf_latent_codes[furniture["jid"]]
 
-            f = np.zeros(6 + 1 + 512) # 4 geo, 2 ori, 1 cat, 512 shape
-            f[0:6] = [pos[0], pos[2], dim[0], dim[2], ori[0], ori[2]]
-            f[6] = cat
-            f[7:] = shape_code
+            f = np.zeros(geometry_size+orientation_size+category_size+shape_size)
+            if position_size == 2:
+                f[0:position_size] = [pos[0], pos[2]]
+            elif position_size == 3:
+                f[0:position_size] = [pos[0], pos[1], pos[2]]
+            else:
+                raise Exception
+            if dimension_size == 2:
+                f[position_size:position_size+dimension_size] = [dim[0], dim[2]]
+            elif dimension_size == 3:
+                f[position_size:position_size+dimension_size] = [dim[0], dim[1], dim[2]]
+            else:
+                raise Exception
+            f[geometry_size:geometry_size+orientation_size] = [ori[0], ori[2]]
+            f[geometry_size+orientation_size] = cat
+            f[geometry_size+orientation_size+category_size:] = shape_code
             furniture_list.append(f)
             model_id_list.append(furniture['jid'])
 
@@ -252,12 +281,18 @@ for scene_filename in scene_filenames:
         furniture_arr = np.array(furniture_list)
 
         # center room around average of furniture positions
-        pos_avg = np.average(furniture_arr[:, 0:2], axis=0)
-        furniture_arr[:, 0:2] -= pos_avg
+        if position_size == 2:
+            pos_avg = np.average(furniture_arr[:, 0:2], axis=0)
+            furniture_arr[:, 0:2] -= pos_avg
+        elif position_size == 3:
+            pos_avg = np.average(furniture_arr[:, [0, 2]], axis=0)
+            furniture_arr[:, [0, 2]] -= pos_avg
+        else:
+            raise Exception
 
         # re-orient room around f_orient_to
         if orient_to is not None:
-            f_ori = f_orient_to[4:6]
+            f_ori = f_orient_to[geometry_size:geometry_size+orientation_size]
             rot_angle = -np.arctan2(f_ori[0], f_ori[1])
             rotate_furniture(furniture_arr, rot_angle)
 
@@ -267,10 +302,10 @@ for scene_filename in scene_filenames:
             f = furniture_list[i]
             furniture_info_list.append({
                 "id": model_id_list[i],
-                "pos": [f[0], f[1]],
-                "dim": [f[2], f[3]],
-                "ori": [f[4], f[5]],
-                "cat": int(f[6])
+                "pos": [f[i] for i in range(0, position_size)],
+                "dim": [f[i] for i in range(position_size, geometry_size)],
+                "ori": [f[i] for i in range(geometry_size, geometry_size+orientation_size)],
+                "cat": int(f[geometry_size+orientation_size])
             })
         
         if SAVE:
